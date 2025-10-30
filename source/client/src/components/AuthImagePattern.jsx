@@ -13,7 +13,7 @@ const AuthImagePattern = ({ title, subtitle }) => {
   }, []);
 
   const handleImageError = (index) => {
-    setImageErrors(prev => ({ ...prev, [index]: true }));
+    setImageErrors((prev) => ({ ...prev, [index]: true }));
   };
 
   return (
@@ -21,7 +21,7 @@ const AuthImagePattern = ({ title, subtitle }) => {
       {/* Decorative circles */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-      
+
       <div className="max-w-md text-center relative z-10">
         {/* Grid Pattern with Images */}
         <div className="grid grid-cols-3 gap-4 mb-12">
@@ -29,26 +29,26 @@ const AuthImagePattern = ({ title, subtitle }) => {
             <div
               key={i}
               className={`aspect-square rounded-2xl overflow-hidden relative transition-all duration-500 ${
-                activeIndex === i 
-                  ? 'ring-4 ring-white ring-offset-4 ring-offset-transparent shadow-2xl shadow-white/50 scale-105' 
-                  : 'ring-2 ring-white/20'
+                activeIndex === i
+                  ? "ring-4 ring-white ring-offset-4 ring-offset-transparent shadow-2xl shadow-white/50 scale-105"
+                  : "ring-2 ring-white/20"
               }`}
               style={{
-                transform: activeIndex === i ? 'scale(1.05)' : 'scale(1)',
+                transform: activeIndex === i ? "scale(1.05)" : "scale(1)",
               }}
             >
               {/* Image hoặc Fallback */}
               {!imageErrors[i] ? (
                 <>
-                  <img 
+                  <img
                     src={`/statics/${num}.jpg`}
                     alt={`User ${num}`}
                     className={`w-full h-full object-cover transition-all duration-500 ${
-                      activeIndex === i ? 'brightness-125' : 'brightness-100'
+                      activeIndex === i ? "brightness-125" : "brightness-100"
                     }`}
                     onError={() => handleImageError(i)}
                   />
-                  
+
                   {/* Glowing effect overlay khi active */}
                   {activeIndex === i && (
                     <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
