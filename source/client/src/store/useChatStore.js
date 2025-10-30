@@ -2,7 +2,6 @@ import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 
-
 export const useChatStore = create((set, get) => ({
   messages: [], // chứa tin nhắn cập nhật thời gian thực
   users: [],
@@ -11,17 +10,42 @@ export const useChatStore = create((set, get) => ({
   isMessagesLoading: false, // show skeleton
   // call api to get all users
   getUsers: async () => {
-    set({ isUsersLoading: true })
+    set({ isUsersLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/users") // call api
-      console.log("res:", res.data)
-      set({ users: res.data }) // response contains list of users
+      const res = await axiosInstance.get("/messages/users"); // call api
+      console.log("res:", res.data);
+      set({ users: res.data }); // response contains list of users
     } catch (error) {
-      toast.error(error.response.data.message) // display the notification
+      toast.error(error.response.data.message); // display the notification
     } finally {
-      set({ isUsersLoading: false }) // process is done
+      set({ isUsersLoading: false }); // process is done
+    }
+  }, // call api to get conversation of userID
+  getMessages: async (userId) => {
+    set({ isMessagesLoading: true });
+    try {
+      const res = await axiosInstance.get(`/messages/${userId}`);
+      set({ messages: res.data });
+    } catch (error) {
+      toast.error(error.response.data.message); // display the notification
+    } finally {
+      set({ isMessagesLoading: false });
     }
   },
-  
+
+  sendMessage: async (messageData) => {
+    const { selectedUser, messages } = get();
+    try {
+      // Đối tượng messageData sẽ được gửi trong phần body của request.
+      const res = await axiosInstance.post(
+        `/messages/send/${selectedUser._id}`,
+        messageData
+      );
+      set({ messages: [...messages, res.data] });
+    } catch (error) {
+      toast.error(error.response.data.message); // display the notification
+    }
+  },
+
   setSelectedUser: (selectedUser) => set({ selectedUser }),
-}))
+}));

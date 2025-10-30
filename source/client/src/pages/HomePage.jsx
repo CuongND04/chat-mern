@@ -1,5 +1,4 @@
 import { useChatStore } from "../store/useChatStore";
-
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
@@ -8,17 +7,25 @@ const HomePage = () => {
   const { selectedUser } = useChatStore();
 
   return (
-    <div className="h-screen bg-base-200">
-      <div className="flex items-center justify-center pt-20 px-4">
-        <div className="bg-base-100 rounded-lg shadow-cl w-full max-w-6xl h-[calc(100vh-8rem)]">
-          <div className="flex h-full rounded-lg overflow-hidden">
-            <Sidebar />
-
-            {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
-          </div>
-        </div>
+    <div
+      className="
+        w-screen h-screen bg-[#FDFCF5] 
+        flex items-center justify-center p-4 
+        pt-20  /*  thêm khoảng tránh Navbar fixed */
+      "
+    >
+      <div
+        className="
+          flex w-full max-w-6xl h-[85vh] 
+          bg-white border-4 border-black rounded-xl overflow-hidden 
+          shadow-[6px_6px_0_#000]
+        "
+      >
+        <Sidebar />
+        {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
       </div>
     </div>
   );
 };
+
 export default HomePage;
