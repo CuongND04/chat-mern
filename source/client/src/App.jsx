@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect } from "react";
+import Navbar from "./components/Navbar";
+import { Routes, Route, Navigate } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import SignUpPage from "./pages/SignUpPage";
+import { useAuthStore } from "./store/useAuthStore";
 
-function App() {
-  const [count, setCount] = useState(0)
+import { Loader } from "lucide-react";
+import { Toaster } from "react-hot-toast";
+import { useThemeStore } from "./store/useThemeStore";
 
+const App = () => {
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
+  const { theme } = useThemeStore();
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  console.log("onlineUsers: ", onlineUsers);
+  // display spin load if it is checking
+  if (isCheckingAuth && !authUser) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="size-10 animate-spin" />
+      </div>
+    );
+  }
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div data-theme={theme}>
+      <Navbar />
+      {/* <Routes> A component that matches the current URL with defined routes and renders the appropriate one. */}
+      <Routes>
+        {/* <Route>: Defines a specific path and the component to display when the URL matches that path. */}
+        <Route
+          path="/"
+          element={authUser ? <HomePage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/signup"
+          element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/login"
+          element={!authUser ? <LoginPage /> : <Navigate to="/" />}
+        />
+      
+      </Routes>
 
-export default App
+      <Toaster />
+    </div>
+  );
+};
+
+export default App;
