@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Link } from "react-router-dom";
-import { LogOut, MessageSquare } from "lucide-react";
+import { LogOut, MessageSquare, User } from "lucide-react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
@@ -32,21 +32,38 @@ const Navbar = () => {
           </h1>
         </Link>
 
-        {/* Logout */}
         {authUser && (
-          <button
-            onClick={logout}
-            className="
-              flex items-center gap-2
-              bg-blue-400 text-black font-semibold px-4 py-2 rounded-md
-              border-2 border-black shadow-[3px_3px_0_#000]
-              hover:bg-blue-500 hover:translate-y-[2px] hover:shadow-none
-              transition-all
-            "
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Profile */}
+            <Link
+              to="/profile"
+              className="
+        flex items-center gap-2
+        bg-green-400 text-black font-semibold px-4 py-2 rounded-md
+        border-2 border-black shadow-[3px_3px_0_#000]
+        hover:bg-green-500 hover:translate-y-[2px] hover:shadow-none
+        transition-all
+      "
+            >
+              <User className="w-5 h-5" />
+              <span className="hidden sm:inline">Profile</span>
+            </Link>
+
+            {/* Logout */}
+            <button
+              onClick={logout}
+              className="
+        flex items-center gap-2
+        bg-blue-400 text-black font-semibold px-4 py-2 rounded-md
+        border-2 border-black shadow-[3px_3px_0_#000]
+        hover:bg-blue-500 hover:translate-y-[2px] hover:shadow-none
+        transition-all
+      "
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
         )}
       </div>
     </header>

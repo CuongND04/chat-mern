@@ -83,11 +83,21 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Profile updated successfully");
     } catch (error) {
       console.log("error in update profile:", error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Update failed");
     } finally {
       set({ isUpdatingProfile: false });
     }
   },
+  changePassword: async (data) => {
+    try {
+      const res = await axiosInstance.put("/auth/change-password", data);
+      toast.success(res.data.message);
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    }
+  },
+
   connectSocket: async () => {
     const { authUser } = get();
     // nếu chưa xác thực hoặc đã kết nối rồi thì không kết nối lại nữa
@@ -113,5 +123,8 @@ export const useAuthStore = create((set, get) => ({
     });
   },
 
-  disconnectSocket: async () => {},
+  disconnectSocket: async () => {
+    // .connected và .disconnect là thuộc tính và phương thức có sẵn của thằng get().socket
+    if (get().socket?.connected) get().socket.disconnect();
+  },
 }));

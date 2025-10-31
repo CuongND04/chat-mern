@@ -6,7 +6,7 @@ import User from "../models/user.model.js";
 export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
-    
+
     // Get all users except logged in user
     const filteredUsers = await User.find({
       _id: { $ne: loggedInUserId },
@@ -20,7 +20,7 @@ export const getUsersForSidebar = async (req, res) => {
           receiverId: loggedInUserId,
           read: false,
         });
-        
+
         return {
           ...user.toObject(),
           unreadCount,
@@ -53,39 +53,35 @@ export const getMessages = async (req, res) => {
 };
 // ✅ THÊM: Hàm cập nhật trạng thái tin nhắn thành đã đọc
 export const markMessagesAsRead = async (req, res) => {
-  try {
-    // senderId trong route này chính là ID của người gửi tin nhắn (Người A)
-    const { id: senderId } = req.params;
-    // ID của người nhận (người đang đăng nhập, người xem tin nhắn - Người B)
-    const receiverId = req.user._id;
+  try {
+    // senderId trong route này chính là ID của người gửi tin nhắn (Người A)
+    const { id: senderId } = req.params; // ID của người nhận (người đang đăng nhập, người xem tin nhắn - Người B)
+    const receiverId = req.user._id; // 1. Cập nhật TẤT CẢ tin nhắn chưa đọc thành read: true trong DB
 
-    // 1. Cập nhật TẤT CẢ tin nhắn chưa đọc thành read: true trong DB
-    await Message.updateMany(
-      {
-        senderId: senderId,
-        receiverId: receiverId,
-        read: false, // Chỉ cập nhật những tin nhắn chưa đọc
-      },
-      { read: true }
-    );
+    await Message.updateMany(
+      {
+        senderId: senderId,
+        receiverId: receiverId,
+        read: false, // Chỉ cập nhật những tin nhắn chưa đọc
+      },
+      { read: true }
+    ); // 2. Socket.io Emit để thông báo cho người gửi (A) biết B đã đọc
 
-    // 2. Socket.io Emit để thông báo cho người gửi (A) biết B đã đọc
-    const senderSocketId = getReceiverSocketId(senderId);
+    const senderSocketId = getReceiverSocketId(senderId);
 
-    if (senderSocketId) {
-      // Gửi sự kiện message_seen_update chỉ đến người gửi (A)
-      io.to(senderSocketId).emit("message_seen_update", {
-        senderId: senderId,
-        receiverId: receiverId,
-        // Không cần gửi danh sách messages, Frontend sẽ tự cập nhật.
-      });
-    }
+    if (senderSocketId) {
+      // Gửi sự kiện message_seen_update chỉ đến người gửi (A)
+      io.to(senderSocketId).emit("message_seen_update", {
+        senderId: senderId,
+        receiverId: receiverId, // Không cần gửi danh sách messages, Frontend sẽ tự cập nhật.
+      });
+    }
 
-    res.status(200).json({ message: "Messages marked as read successfully" });
-  } catch (error) {
-    console.log("Error in markMessagesAsRead: ", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
+    res.status(200).json({ message: "Messages marked as read successfully" });
+  } catch (error) {
+    console.log("Error in markMessagesAsRead: ", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 export const sendMessage = async (req, res) => {
   try {
