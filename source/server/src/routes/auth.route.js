@@ -1,14 +1,24 @@
 import express from "express";
+import {
+  changePassword,
+  checkAuth,
+  login,
+  logout,
+  signup,
+  updateProfile,
+} from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
-import { signup, login, logout,checkAuth } from "../controllers/auth.controller.js";
 const router = express.Router();
 
-router.post("/signup", signup)
-router.post("/login", login)
-router.post("/logout", logout)
+router.post("/signup", signup);
+router.post("/login", login);
+router.post("/logout", logout);
+
+// put : there is something that we're updating
+router.put("/update-profile", protectRoute, updateProfile);
+router.put("/change-password", protectRoute, changePassword);
 
 // check if user is authenticated
-router.get("/check", protectRoute, checkAuth)
-
+router.get("/check", protectRoute, checkAuth);
 export default router;

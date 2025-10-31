@@ -3,16 +3,15 @@ import Navbar from "./components/Navbar";
 import { Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import ProfilePage from "./pages/ProfilePage";
 import SignUpPage from "./pages/SignUpPage";
 import { useAuthStore } from "./store/useAuthStore";
 
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
-import { useThemeStore } from "./store/useThemeStore";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
-  const { theme } = useThemeStore();
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
@@ -26,7 +25,7 @@ const App = () => {
     );
   }
   return (
-    <div data-theme={theme}>
+    <div>
       <Navbar />
       {/* <Routes> A component that matches the current URL with defined routes and renders the appropriate one. */}
       <Routes>
@@ -43,7 +42,10 @@ const App = () => {
           path="/login"
           element={!authUser ? <LoginPage /> : <Navigate to="/" />}
         />
-      
+        <Route
+          path="/profile"
+          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+        />
       </Routes>
 
       <Toaster />
