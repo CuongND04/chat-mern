@@ -61,16 +61,12 @@ const Sidebar = () => {
           <button
             key={user._id}
             onClick={() => setSelectedUser(user)}
-            className={`flex items-center gap-3 w-full text-left 
-              border-2 border-black rounded-lg px-2 py-2 bg-white shadow-[2px_2px_0_#000]
-              hover:translate-y-[1px] hover:shadow-none transition-all
-              ${
-                selectedUser?._id === user._id
-                  ? "bg-blue-200"
-                  : "hover:bg-[#FFF2AC]"
-              }`}
+            className={`flex items-center justify-center lg:justify-start gap-3 w-full text-left 
+    border-2 border-black rounded-lg px-2 py-2 bg-white shadow-[2px_2px_0_#000]
+    hover:translate-y-[1px] hover:shadow-none transition-all
+    ${selectedUser?._id === user._id ? "bg-blue-200" : "hover:bg-[#FFF2AC]"}`}
           >
-            <div className="relative mx-auto lg:mx-0">
+            <div className="relative flex-shrink-0">
               <img
                 src={user.profilePic || "/statics/10.jpg"}
                 alt={user.name}
@@ -81,7 +77,8 @@ const Sidebar = () => {
               )}
             </div>
 
-            <div className="hidden lg:block min-w-0">
+            {/* Ẩn text khi thu nhỏ */}
+            <div className="hidden lg:block min-w-0 overflow-hidden">
               <div className="font-bold truncate text-black">
                 {user.fullName}
               </div>
