@@ -28,7 +28,7 @@ const Navbar = () => {
             <MessageSquare className="w-4 h-4 text-black" />
           </div>
           <h1 className="font-extrabold text-black text-lg uppercase tracking-wide">
-            Chatty
+            HiChat
           </h1>
         </Link>
 

@@ -11,7 +11,9 @@ const SidebarSkeleton = () => {
           <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse flex items-center justify-center">
             <Users className="w-5 h-5 text-gray-400" />
           </div>
-          <span className="font-semibold text-gray-900 hidden lg:block">Contacts</span>
+          <span className="font-semibold text-gray-900 hidden lg:block">
+            Contacts
+          </span>
         </div>
 
         {/* Skeleton filter toggle */}
@@ -27,8 +29,8 @@ const SidebarSkeleton = () => {
       {/* Skeleton Contacts */}
       <div className="overflow-y-auto w-full py-2">
         {skeletonContacts.map((_, idx) => (
-          <div 
-            key={idx} 
+          <div
+            key={idx}
             className="w-full p-3 flex items-center gap-3"
             style={{ animationDelay: `${idx * 0.05}s` }}
           >

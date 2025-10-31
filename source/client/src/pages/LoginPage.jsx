@@ -15,27 +15,27 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-[#FDFCF5] text-black pt-20 ">
+    <div className="h-screen grid lg:grid-cols-2 bg-[#FDFCF5] text-black pt-8 overflow-hidden">
       {/* LEFT: Login form */}
-      <div className="flex flex-col justify-center items-center px-6 sm:px-12">
+      <div className="flex flex-col justify-center items-center px-6 sm:px-10 scale-[0.9]">
         <div
           className="
             w-full max-w-md bg-white border-4 border-black rounded-xl 
-            p-8 shadow-[6px_6px_0_#000]
+            p-6 shadow-[4px_4px_0_#000] overflow-y-auto max-h-[90vh]
           "
         >
           {/* Logo */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-6">
             <div
               className="
-                inline-flex items-center justify-center w-16 h-16 rounded-lg
-                bg-yellow-300 border-4 border-black mb-4
-                shadow-[4px_4px_0_#000]
+                inline-flex items-center justify-center w-14 h-14 rounded-lg
+                bg-yellow-300 border-4 border-black mb-3
+                shadow-[3px_3px_0_#000]
               "
             >
-              <MessageSquare className="w-8 h-8 text-black" />
+              <MessageSquare className="w-7 h-7 text-black" />
             </div>
-            <h1 className="text-3xl font-extrabold uppercase tracking-wide">
+            <h1 className="text-2xl font-extrabold uppercase tracking-wide">
               Welcome Back!
             </h1>
             <p className="text-sm font-medium mt-1 text-gray-700">
@@ -44,7 +44,7 @@ const LoginPage = () => {
           </div>
 
           {/* FORM */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
               <label className="block font-bold mb-1">Email</label>
@@ -61,7 +61,7 @@ const LoginPage = () => {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   className="
-                    w-full pl-10 pr-4 py-3 border-2 border-black rounded-lg 
+                    w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-lg 
                     bg-[#FFF2AC] shadow-[3px_3px_0_#000] focus:outline-none
                     focus:translate-y-[1px] focus:shadow-none transition-all
                   "
@@ -85,7 +85,7 @@ const LoginPage = () => {
                     setFormData({ ...formData, password: e.target.value })
                   }
                   className="
-                    w-full pl-10 pr-12 py-3 border-2 border-black rounded-lg 
+                    w-full pl-10 pr-10 py-2.5 border-2 border-black rounded-lg 
                     bg-[#B9E6C9] shadow-[3px_3px_0_#000] focus:outline-none
                     focus:translate-y-[1px] focus:shadow-none transition-all
                   "
@@ -109,8 +109,8 @@ const LoginPage = () => {
               type="submit"
               disabled={isLoggingIn}
               className="
-                w-full mt-6 bg-blue-400 border-2 border-black 
-                text-black font-bold py-3 rounded-lg shadow-[3px_3px_0_#000]
+                w-full mt-5 bg-blue-400 border-2 border-black 
+                text-black font-bold py-2.5 rounded-lg shadow-[3px_3px_0_#000]
                 hover:translate-y-[2px] hover:shadow-none transition-all
                 flex items-center justify-center gap-2
               "
@@ -126,8 +126,8 @@ const LoginPage = () => {
           </form>
 
           {/* Footer */}
-          <div className="text-center mt-6">
-            <p className="font-medium">
+          <div className="text-center mt-5">
+            <p className="font-medium text-sm">
               Don’t have an account?{" "}
               <Link
                 to="/signup"

@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
+const BASE_URL = "http://localhost:5001";
 
 // just create it in one place and use it in any other components
 export const useAuthStore = create((set, get) => ({
@@ -14,19 +15,20 @@ export const useAuthStore = create((set, get) => ({
   isUpdatingProfile: false,
   isCheckingAuth: true,
   onlineUsers: [],
-  
+  socket: null,
   checkAuth: async () => {
     try {
       // build api to check if user is authenticated
       // don't write base url because it is indicated in axios.js
-      const res = await axiosInstance.get("/auth/check")
-      set({ authUser: res.data })
-      
+      const res = await axiosInstance.get("/auth/check");
+      set({ authUser: res.data });
+      // nếu đã được xác thực rồi thì kết nối với socket
+      get().connectSocket();
     } catch (error) {
-      console.log("Error in checkAuth: ", error)
-      set({ authUser: null })
+      console.log("Error in checkAuth: ", error);
+      set({ authUser: null });
     } finally {
-      set({ isCheckingAuth: false })
+      set({ isCheckingAuth: false });
     }
   },
 
@@ -37,7 +39,8 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser: res.data });
       toast.success("Account created successfully");
 
-     
+      // sau khi đăng ký nó sẽ kết nối tới socket luôn
+      get().connectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -51,7 +54,7 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser: null });
       toast.success("Logged out successfully");
 
-      get().disconnectSocket()
+      get().disconnectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
     }
@@ -64,7 +67,7 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser: res.data });
       toast.success("Logged in successfully");
       // sau khi đăng nhập nó sẽ kết nối tới socket luôn
-      get().connectSocket()
+      get().connectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -72,7 +75,43 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
- 
+  updateProfile: async (data) => {
+    set({ isUpdatingProfile: true });
+    try {
+      const res = await axiosInstance.put("/auth/update-profile", data);
+      set({ authUser: res.data });
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.log("error in update profile:", error);
+      toast.error(error.response.data.message);
+    } finally {
+      set({ isUpdatingProfile: false });
+    }
+  },
+  connectSocket: async () => {
+    const { authUser } = get();
+    // nếu chưa xác thực hoặc đã kết nối rồi thì không kết nối lại nữa
+    if (!authUser || get().socket?.connected) return;
+    const socket = io(BASE_URL);
+    socket.connect();
+  },
+  connectSocket: async () => {
+    const { authUser } = get();
+    // nếu chưa xác thực hoặc đã kết nối rồi thì không kết nối lại nữa
+    if (!authUser || get().socket?.connected) return;
+    const socket = io(BASE_URL, {
+      query: {
+        userId: authUser._id, // đây là cái dùng để handshake.query
+      },
+    });
+    socket.connect();
 
-  
-})) 
+    set({ socket: socket });
+    // emit bằng tên gì thì mình phải lắng nghe bằng tên đấy
+    socket.on("getOnlineUsers", (userIds) => {
+      set({ onlineUsers: userIds });
+    });
+  },
+
+  disconnectSocket: async () => {},
+}));
