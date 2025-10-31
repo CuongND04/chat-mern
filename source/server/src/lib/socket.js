@@ -1,18 +1,15 @@
 import { Server } from "socket.io";
-import http from "http"; // built in to node
+import http from "http";
 import express from "express";
 
 const app = express();
-const server = http.createServer(app); // create a http server from a express app
-// HTTP server này sẽ được dùng bởi cả Express (cho các request HTTP) và Socket.IO (cho giao tiếp WebSocket).
+const server = http.createServer(app);
 const io = new Server(server, {
-  // Gắn Socket.IO vào HTTP server đã tạo, cho phép giao tiếp thời gian thực qua WebSocket.
   cors: {
-    origin: ["http://localhost:5173"], // help the backend to communicate with frontend
+    origin: ["http://localhost:5173"],
   },
 });
 
-// dùng để chứa những user đang online
 const userSocketMap = {}; // {userId : socketId}
 
 io.on("connection", (socket) => {
@@ -20,16 +17,37 @@ io.on("connection", (socket) => {
 
   const userId = socket.handshake.query.userId;
   if (userId) userSocketMap[userId] = socket.id;
-  // gửi sự kiện tới tất cả các client đã kết nối khác
-  io.emit("getOnlineUsers", Object.keys(userSocketMap)); // danh sách các userId đang online
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  // ✅ THÊM: Xử lý sự kiện typing
+  socket.on("typing", ({ receiverId }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("user-typing", {
+        userId: userId,
+        isTyping: true,
+      });
+    }
+  });
+
+  // ✅ THÊM: Xử lý sự kiện stop typing
+  socket.on("stop-typing", ({ receiverId }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("user-typing", {
+        userId: userId,
+        isTyping: false,
+      });
+    }
+  });
 
   socket.on("disconnect", () => {
-    console.log("A user disconnted", socket.id);
+    console.log("A user disconnected", socket.id);
     delete userSocketMap[userId];
-    // gửi sự kiện tới tất cả các client đã kết nối khác
-    io.emit("getOnlineUsers", Object.keys(userSocketMap)); // danh sách các userId đang online
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
+
 export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }

@@ -3,8 +3,11 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 
 const ChatHeader = () => {
-  const { selectedUser, setSelectedUser } = useChatStore();
+  const { selectedUser, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers } = useAuthStore();
+
+  // ✅ THÊM: Kiểm tra user đang gõ
+  const isUserTyping = typingUsers.has(selectedUser._id);
 
   return (
     <div className="p-2.5 border-b border-base-300">
@@ -25,8 +28,22 @@ const ChatHeader = () => {
           {/* User info */}
           <div>
             <h3 className="font-medium">{selectedUser.fullName}</h3>
+            {/* ✅ THÊM: Hiển thị typing hoặc online status */}
             <p className="text-sm text-base-content/70">
-              {onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
+              {isUserTyping ? (
+                <span className="text-blue-500 font-semibold flex items-center gap-1">
+                  <span className="animate-pulse">đang gõ</span>
+                  <span className="flex gap-0.5">
+                    <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
+                    <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                    <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                  </span>
+                </span>
+              ) : onlineUsers.includes(selectedUser._id) ? (
+                "Online"
+              ) : (
+                "Offline"
+              )}
             </p>
           </div>
         </div>
@@ -39,4 +56,5 @@ const ChatHeader = () => {
     </div>
   );
 };
+
 export default ChatHeader;
