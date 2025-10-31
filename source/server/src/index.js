@@ -17,15 +17,20 @@ app.use(express.json()); // req.body to get data from req.body
 app.use(cookieParser()); // it allow parse the cookies so can grab the values out of it
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      
+    ],
     credentials: true,
   })
 );
 
+
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 // HTTP server này sẽ được dùng bởi cả Express (cho các request HTTP) và Socket.IO (cho giao tiếp WebSocket).
-server.listen(PORT, () => {
-  console.log(`server is running on port ${PORT}!!`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server is running on port ${PORT}`);
   connectDB();
 });
+
