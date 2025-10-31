@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
+import { useAuthStore } from "./useAuthStore";
 
 export const useChatStore = create((set, get) => ({
   messages: [], // chứa tin nhắn cập nhật thời gian thực
@@ -20,7 +21,8 @@ export const useChatStore = create((set, get) => ({
     } finally {
       set({ isUsersLoading: false }); // process is done
     }
-  }, // call api to get conversation of userID
+  },
+  // call api to get conversation of userID
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
     try {
@@ -32,7 +34,6 @@ export const useChatStore = create((set, get) => ({
       set({ isMessagesLoading: false });
     }
   },
-
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     try {
@@ -41,10 +42,32 @@ export const useChatStore = create((set, get) => ({
         `/messages/send/${selectedUser._id}`,
         messageData
       );
+      // console.log("run on sendMessage: ", messages)
       set({ messages: [...messages, res.data] });
     } catch (error) {
       toast.error(error.response.data.message); // display the notification
     }
+  },
+  subscribeToMessages: () => {
+    const { selectedUser } = get();
+    if (!selectedUser) return;
+    // getState():Là một phương thức của store trong Zustand,
+    // được dùng để truy cập trực tiếp toàn bộ trạng thái hiện tại của store.
+    const socket = useAuthStore.getState().socket;
+    socket.on("newMessage", (newMessage) => {
+      // tránh hiển thị tin nhắn nhận bên những user khác
+      // tin nhắn có được gửi từ selected user hay không
+      if (newMessage.senderId !== selectedUser._id) return;
+
+      // đây là spread, dùng để thêm phần tử mới nối tiếp vào mảng cũ
+      set({ messages: [...get().messages, newMessage] });
+      // console.log("run on subscribeToMessages")
+    });
+  },
+
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket.off("newMessage");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
