@@ -5,7 +5,7 @@ import { useChatStore } from "../store/useChatStore";
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers } = useAuthStore();
-
+  
   // ✅ THÊM: Kiểm tra user đang gõ
   const isUserTyping = typingUsers.has(selectedUser._id);
 

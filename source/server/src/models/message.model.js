@@ -18,6 +18,10 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    read: {
+      type: Boolean,
+      default: false, // Mặc định tin nhắn mới là chưa đọc
+    },
   },
   { timestamps: true }
 );

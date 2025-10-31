@@ -13,7 +13,8 @@ dotenv.config();
 
 const PORT = process.env.PORT;
 
-app.use(express.json()); // req.body to get data from req.body
+//app.use(express.json()); // req.body to get data from req.body
+app.use(express.json({ limit: '50mb' })); // Tăng giới hạn để xử lý file lớn
 app.use(cookieParser()); // it allow parse the cookies so can grab the values out of it
 app.use(
   cors({
