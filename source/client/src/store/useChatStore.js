@@ -9,21 +9,19 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null, // show conversation between myUser with that user
   isUsersLoading: false, // show skeleton
   isMessagesLoading: false, // show skeleton
-  
-  // ✅ THÊM: State cho typing indicator
   typingUsers: new Set(), // Lưu danh sách userId đang typing
 
   // call api to get all users
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/users"); // call api
+      const res = await axiosInstance.get("/messages/users");
       console.log("res:", res.data);
-      set({ users: res.data }); // response contains list of users
+      set({ users: res.data });
     } catch (error) {
-      toast.error(error.response.data.message); // display the notification
+      toast.error(error.response.data.message);
     } finally {
-      set({ isUsersLoading: false }); // process is done
+      set({ isUsersLoading: false });
     }
   },
 
@@ -34,7 +32,7 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
     } catch (error) {
-      toast.error(error.response.data.message); // display the notification
+      toast.error(error.response.data.message);
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -43,14 +41,51 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     try {
-      // Đối tượng messageData sẽ được gửi trong phần body của request.
       const res = await axiosInstance.post(
         `/messages/send/${selectedUser._id}`,
         messageData
       );
       set({ messages: [...messages, res.data] });
     } catch (error) {
-      toast.error(error.response.data.message); // display the notification
+      toast.error(error.response.data.message);
+    }
+  },
+
+  // ✅ Hàm đánh dấu tin nhắn là đã đọc
+  markMessagesAsRead: async (senderId) => {
+    try {
+      // ✅ 1. CẬP NHẬT STATE TRƯỚC (Optimistic UI Update)
+      set(state => ({
+        messages: state.messages.map(msg => {
+          if (msg.senderId === senderId && !msg.read) {
+            return { ...msg, read: true };
+          }
+          return msg;
+        }),
+        users: state.users.map(user => {
+          if (user._id === senderId && user.unreadCount) {
+            return { ...user, unreadCount: 0 };
+          }
+          return user;
+        })
+      }));
+
+      // ✅ 2. SAU ĐÓ GỌI API (Server sẽ emit socket cho người gửi)
+      await axiosInstance.put(`/messages/read/${senderId}`);
+
+    } catch (error) {
+      console.error("Failed to mark messages as read:", error);
+      toast.error("Không thể đánh dấu đã đọc.");
+      
+      // ✅ 3. Rollback nếu API thất bại
+      set(state => ({
+        messages: state.messages.map(msg => {
+          if (msg.senderId === senderId) {
+            return { ...msg, read: false };
+          }
+          return msg;
+        })
+      }));
     }
   },
 
@@ -60,17 +95,53 @@ export const useChatStore = create((set, get) => ({
     
     const socket = useAuthStore.getState().socket;
 
-    // Subscribe to new messages
+    // ✅ Subscribe to new messages
     socket.on("newMessage", (newMessage) => {
-      // tránh hiển thị tin nhắn nhận bên những user khác
-      // tin nhắn có được gửi từ selected user hay không
-      if (newMessage.senderId !== selectedUser._id) return;
+      const currentSelectedUser = get().selectedUser;
+      const isMessageInCurrentChat = newMessage.senderId === currentSelectedUser?._id;
+      
+      // ✅ CẬP NHẬT UNREAD COUNT TRƯỚC
+      if (!isMessageInCurrentChat) {
+        // Tin nhắn từ người KHÔNG phải đang chat -> Tăng unreadCount
+        set(state => ({
+          users: state.users.map(user => {
+            if (user._id === newMessage.senderId) {
+              return { ...user, unreadCount: (user.unreadCount || 0) + 1 };
+            }
+            return user;
+          })
+        }));
+        return; // Không thêm vào messages vì không phải chat hiện tại
+      }
 
-      // đây là spread, dùng để thêm phần tử mới nối tiếp vào mảng cũ
+      // ✅ Nếu tin nhắn từ người đang chat
+      // 1. Thêm tin nhắn vào messages
       set({ messages: [...get().messages, newMessage] });
+      
+      // 2. Đánh dấu đã đọc NGAY LẬP TỨC
+      get().markMessagesAsRead(newMessage.senderId);
     });
 
-    // ✅ THÊM: Subscribe to typing events
+    // ✅ Subscribe to update read status (Khi người khác đọc tin nhắn của mình)
+    socket.on("message_seen_update", ({ senderId, receiverId }) => {
+      const myUserId = useAuthStore.getState().authUser._id;
+      const currentSelectedUser = get().selectedUser;
+      
+      // Chỉ cập nhật nếu người gửi (A) đang xem cuộc trò chuyện với người nhận (B)
+      if (myUserId === senderId && receiverId === currentSelectedUser?._id) {
+        set(state => ({
+          messages: state.messages.map(msg => {
+            // Cập nhật tất cả tin nhắn gửi đi trong chat hiện tại thành đã đọc
+            if (msg.senderId === myUserId && !msg.read) {
+              return { ...msg, read: true };
+            }
+            return msg;
+          })
+        }));
+      }
+    });
+    
+    // ✅ Subscribe to typing events
     socket.on("user-typing", ({ userId, isTyping }) => {
       const { setUserTyping, setUserStoppedTyping } = get();
       
@@ -85,12 +156,11 @@ export const useChatStore = create((set, get) => ({
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
-    
-    // ✅ THÊM: Unsubscribe from typing events
     socket.off("user-typing");
+    socket.off("message_seen_update");
   },
 
-  // ✅ THÊM: Action để set user đang typing
+  // ✅ Action để set user đang typing
   setUserTyping: (userId) => {
     set((state) => {
       const newTypingUsers = new Set(state.typingUsers);
@@ -99,7 +169,7 @@ export const useChatStore = create((set, get) => ({
     });
   },
 
-  // ✅ THÊM: Action để set user dừng typing
+  // ✅ Action để set user dừng typing
   setUserStoppedTyping: (userId) => {
     set((state) => {
       const newTypingUsers = new Set(state.typingUsers);
@@ -109,7 +179,12 @@ export const useChatStore = create((set, get) => ({
   },
 
   setSelectedUser: (selectedUser) => {
-    // ✅ THÊM: Clear typing users khi chuyển chat
+    // Clear typing users khi chuyển chat
     set({ selectedUser, typingUsers: new Set() });
+
+    // ✅ Đánh dấu đã đọc khi mở cuộc trò chuyện
+    if (selectedUser && selectedUser._id) {
+      get().markMessagesAsRead(selectedUser._id);
+    }
   },
 }));
