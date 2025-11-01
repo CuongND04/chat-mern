@@ -1,5 +1,14 @@
 import React, { useState, useRef } from "react";
-import { X, Users, Crown, UserPlus, LogOut, Edit, UserMinus, Camera } from "lucide-react";
+import {
+  X,
+  Users,
+  Crown,
+  UserPlus,
+  LogOut,
+  Edit,
+  UserMinus,
+  Camera,
+} from "lucide-react";
 import { useGroupStore } from "../store/useGroupStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
@@ -8,8 +17,13 @@ import toast from "react-hot-toast";
 const GroupSettingsModal = ({ isOpen, onClose, group }) => {
   const { authUser } = useAuthStore();
   const { users } = useChatStore();
-  const { addMembersToGroup, removeMemberFromGroup, leaveGroup, updateGroupInfo } = useGroupStore();
-  
+  const {
+    addMembersToGroup,
+    removeMemberFromGroup,
+    leaveGroup,
+    updateGroupInfo,
+  } = useGroupStore();
+
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [selectedNewMembers, setSelectedNewMembers] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -19,7 +33,7 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
   const [editImage, setEditImage] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   if (!isOpen || !group) return null;
 
   const isAdmin = group.admin._id === authUser._id;
@@ -59,38 +73,90 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
   };
 
   // Xóa member
+  // import toast from "react-hot-toast";
+
   const handleRemoveMember = async (memberId, memberName) => {
     if (memberId === group.admin._id) {
       toast.error("Cannot remove admin from group");
       return;
     }
 
-    if (window.confirm(`Remove ${memberName} from this group?`)) {
-      try {
-        await removeMemberFromGroup(group._id, memberId);
-        toast.success(`${memberName} has been removed`);
-      } catch (error) {
-        console.error("Failed to remove member:", error);
-      }
-    }
+    toast.custom((t) => (
+      <div className="bg-white border-4 border-black rounded-xl px-4 py-3 shadow-[3px_3px_0_#000]">
+        <p className="font-bold mb-2 text-sm text-black">
+          Remove <span className="text-red-600">{memberName}</span> from this
+          group?
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await removeMemberFromGroup(group._id, memberId);
+                toast.success(`${memberName} has been removed`);
+              } catch (error) {
+                console.error("Failed to remove member:", error);
+                toast.error("Failed to remove member");
+              }
+            }}
+            className="bg-[#FF6B6B] text-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Remove
+          </button>
+
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ));
   };
 
   // Rời khỏi group
+  // Rời khỏi group
   const handleLeaveGroup = async () => {
     if (isAdmin) {
-      toast.error("Admin cannot leave the group. Please transfer admin role first or delete the group.");
+      toast.error(
+        "Admin cannot leave the group. Please transfer admin role first or delete the group."
+      );
       return;
     }
 
-    if (window.confirm(`Are you sure you want to leave "${group.name}"?`)) {
-      try {
-        await leaveGroup(group._id);
-        onClose();
-        toast.success("You have left the group");
-      } catch (error) {
-        console.error("Failed to leave group:", error);
-      }
-    }
+    toast.custom((t) => (
+      <div className="bg-white border-4 border-black rounded-xl px-4 py-3 shadow-[3px_3px_0_#000]">
+        <p className="font-bold mb-2 text-sm text-black">
+          Leave group <span className="text-blue-600">"{group.name}"</span>?
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await leaveGroup(group._id);
+                onClose();
+                // toast.success("You have left the group");
+              } catch (error) {
+                console.error("Failed to leave group:", error);
+                toast.error("Failed to leave group");
+              }
+            }}
+            className="bg-[#FF6B6B] text-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Leave
+          </button>
+
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ));
   };
 
   // Bật chế độ edit
@@ -147,7 +213,7 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[10000] flex items-start justify-center px-4 pt-20 pb-8">
-      <div className="bg-[#FDFCF5] border-4 border-black rounded-2xl shadow-[8px_8px_0_#000] max-w-lg w-full max-h-[85vh] overflow-y-auto relative">
+      <div className="bg-[#FDFCF5] border-4 border-black rounded-2xl shadow-[8px_8px_0_#000] max-w-lg w-full max-h-[85vh] overflow-y-scroll scrollbar-hide relative">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b-4 border-black bg-[#FFD43B]">
           <div className="flex items-center gap-2">
@@ -181,7 +247,7 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
             <div className="flex flex-col items-center gap-3 mb-4">
               <div className="relative">
                 <div className="w-24 h-24 rounded-full border-3 border-black bg-[#FFD43B] overflow-hidden shadow-[3px_3px_0_#000]">
-                  {(isEditMode && editImage) ? (
+                  {isEditMode && editImage ? (
                     <img
                       src={editImage}
                       alt="New group pic"
@@ -391,7 +457,9 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
                       disabled={selectedNewMembers.length === 0 || isAdding}
                       className="w-full px-3 py-2 bg-[#74C0FC] border-2 border-black rounded-lg font-bold text-sm shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isAdding ? "Adding..." : `Add ${selectedNewMembers.length} Member(s)`}
+                      {isAdding
+                        ? "Adding..."
+                        : `Add ${selectedNewMembers.length} Member(s)`}
                     </button>
                   </>
                 )}
@@ -427,7 +495,9 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
                   {/* Remove button (chỉ admin mới thấy và không thể remove chính mình nếu là admin) */}
                   {isAdmin && member._id !== group.admin._id && (
                     <button
-                      onClick={() => handleRemoveMember(member._id, member.fullName)}
+                      onClick={() =>
+                        handleRemoveMember(member._id, member.fullName)
+                      }
                       className="w-7 h-7 bg-red-500 border-2 border-black rounded flex items-center justify-center shadow-[1px_1px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
                       title="Remove member"
                     >
