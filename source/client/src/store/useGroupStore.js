@@ -53,15 +53,20 @@ export const useGroupStore = create((set, get) => ({
   // Gửi message trong group
   sendGroupMessage: async (groupId, messageData) => {
     try {
-      const res = await axiosInstance.post(`/groups/${groupId}/send`, messageData);
-      
+      const res = await axiosInstance.post(
+        `/groups/${groupId}/send`,
+        messageData
+      );
+
       // ✅ Kiểm tra xem tin nhắn đã tồn tại chưa trước khi thêm
       const state = get();
-      const messageExists = state.groupMessages.some(msg => msg._id === res.data._id);
-      
+      const messageExists = state.groupMessages.some(
+        (msg) => msg._id === res.data._id
+      );
+
       if (!messageExists) {
-        set((state) => ({ 
-          groupMessages: [...state.groupMessages, res.data] 
+        set((state) => ({
+          groupMessages: [...state.groupMessages, res.data],
         }));
         console.log("✅ Own group message added to state:", res.data._id);
       }
@@ -75,7 +80,7 @@ export const useGroupStore = create((set, get) => ({
     try {
       // Update UI trước
       const userId = useAuthStore.getState().authUser._id;
-      
+
       set((state) => ({
         groupMessages: state.groupMessages.map((msg) => {
           if (!msg.readBy.includes(userId)) {
@@ -121,14 +126,22 @@ export const useGroupStore = create((set, get) => ({
       // Nếu đang xem group này -> thêm message vào
       if (currentSelectedGroup && currentSelectedGroup._id === groupId) {
         // ✅ Kiểm tra xem tin nhắn đã tồn tại chưa (tránh duplicate)
-        const messageExists = get().groupMessages.some(msg => msg._id === message._id);
+        const messageExists = get().groupMessages.some(
+          (msg) => msg._id === message._id
+        );
         if (messageExists) {
-          console.log("⚠️ Group message already exists, skipping:", message._id);
+          console.log(
+            "⚠️ Group message already exists, skipping:",
+            message._id
+          );
           return;
         }
 
         // ✅ Nếu là tin nhắn của chính mình từ socket, skip (vì đã thêm từ API response)
-        if (message.senderId._id === myUserId || message.senderId === myUserId) {
+        if (
+          message.senderId._id === myUserId ||
+          message.senderId === myUserId
+        ) {
           console.log("⚠️ Own message from socket, skipping:", message._id);
           return;
         }
@@ -161,7 +174,7 @@ export const useGroupStore = create((set, get) => ({
       console.log("👥 Group user typing event:", { groupId, userId, isTyping });
       const currentSelectedGroup = get().selectedGroup;
       const myUserId = useAuthStore.getState().authUser._id;
-      
+
       // Chỉ cập nhật nếu đang xem group này và không phải chính mình
       if (currentSelectedGroup?._id === groupId && userId !== myUserId) {
         if (isTyping) {
@@ -282,18 +295,16 @@ export const useGroupStore = create((set, get) => ({
       const res = await axiosInstance.post(`/groups/${groupId}/members`, {
         memberIds,
       });
-      
+
       set((state) => ({
-        groups: state.groups.map((g) =>
-          g._id === groupId ? res.data : g
-        ),
+        groups: state.groups.map((g) => (g._id === groupId ? res.data : g)),
       }));
 
       if (get().selectedGroup?._id === groupId) {
         set({ selectedGroup: res.data });
       }
 
-      toast.success("Members added successfully");
+      // toast.success("Members added successfully");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to add members");
     }
@@ -307,16 +318,14 @@ export const useGroupStore = create((set, get) => ({
       );
 
       set((state) => ({
-        groups: state.groups.map((g) =>
-          g._id === groupId ? res.data : g
-        ),
+        groups: state.groups.map((g) => (g._id === groupId ? res.data : g)),
       }));
 
       if (get().selectedGroup?._id === groupId) {
         set({ selectedGroup: res.data });
       }
 
-      toast.success("Member removed successfully");
+      // toast.success("Member removed successfully");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to remove member");
     }
@@ -328,9 +337,7 @@ export const useGroupStore = create((set, get) => ({
       const res = await axiosInstance.put(`/groups/${groupId}`, data);
 
       set((state) => ({
-        groups: state.groups.map((g) =>
-          g._id === groupId ? res.data : g
-        ),
+        groups: state.groups.map((g) => (g._id === groupId ? res.data : g)),
       }));
 
       if (get().selectedGroup?._id === groupId) {
