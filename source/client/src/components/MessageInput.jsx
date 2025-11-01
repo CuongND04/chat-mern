@@ -1,10 +1,11 @@
 import { useRef, useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
+import { useGroupStore } from "../store/useGroupStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { Image, Send, X, Paperclip, File, Smile } from "lucide-react";
 import toast from "react-hot-toast";
 
-const MessageInput = () => {
+const MessageInput = ({ onSendMessage }) => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -16,6 +17,7 @@ const MessageInput = () => {
   const emojiPickerRef = useRef(null); // ✅ THÊM
   
   const { sendMessage, selectedUser } = useChatStore();
+  const { selectedGroup } = useGroupStore();
   const { socket } = useAuthStore();
 
   // ✅ THÊM: Danh sách emoji phổ biến
@@ -134,18 +136,44 @@ const MessageInput = () => {
   const handleInputChange = (e) => {
     setText(e.target.value);
 
-    if (!socket || !selectedUser) return;
+    if (!socket) {
+      console.log("❌ Socket not connected");
+      return;
+    }
 
+    // ✅ Xử lý typing cho cả 1-1 chat và group chat
     if (!isTyping && e.target.value.trim()) {
       setIsTyping(true);
-      socket.emit("typing", { receiverId: selectedUser._id });
+      
+      if (selectedUser) {
+        // 1-1 chat
+        console.log("⌨️ Emitting typing to user:", selectedUser._id);
+        socket.emit("typing", { receiverId: selectedUser._id });
+      } else if (selectedGroup) {
+        // Group chat
+        console.log("⌨️ Emitting group typing to group:", selectedGroup._id);
+        socket.emit("groupTyping", { 
+          groupId: selectedGroup._id,
+          isTyping: true 
+        });
+      }
     }
 
     clearTimeout(typingTimeoutRef.current);
     
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socket.emit("stop-typing", { receiverId: selectedUser._id });
+      
+      if (selectedUser) {
+        console.log("⏹️ Emitting stop-typing to user:", selectedUser._id);
+        socket.emit("stop-typing", { receiverId: selectedUser._id });
+      } else if (selectedGroup) {
+        console.log("⏹️ Emitting stop group typing to group:", selectedGroup._id);
+        socket.emit("groupTyping", { 
+          groupId: selectedGroup._id,
+          isTyping: false 
+        });
+      }
     }, 2000);
   };
 
@@ -154,28 +182,51 @@ const MessageInput = () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      if (isTyping && socket && selectedUser) {
-        socket.emit("stop-typing", { receiverId: selectedUser._id });
+      if (isTyping && socket) {
+        if (selectedUser) {
+          socket.emit("stop-typing", { receiverId: selectedUser._id });
+        } else if (selectedGroup) {
+          socket.emit("groupTyping", { 
+            groupId: selectedGroup._id,
+            isTyping: false 
+          });
+        }
       }
     };
-  }, [selectedUser, isTyping, socket]);
+  }, [selectedUser, selectedGroup, isTyping, socket]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview && !filePreview) return;
 
-    if (isTyping && socket && selectedUser) {
+    if (isTyping && socket) {
       clearTimeout(typingTimeoutRef.current);
       setIsTyping(false);
-      socket.emit("stop-typing", { receiverId: selectedUser._id });
+      
+      if (selectedUser) {
+        socket.emit("stop-typing", { receiverId: selectedUser._id });
+      } else if (selectedGroup) {
+        socket.emit("groupTyping", { 
+          groupId: selectedGroup._id,
+          isTyping: false 
+        });
+      }
     }
 
     try {
-      await sendMessage({ 
+      const messageData = { 
         text: text.trim(), 
         image: imagePreview,
         file: filePreview // ✅ THÊM
-      });
+      };
+
+      // ✅ Nếu có onSendMessage prop (Group Chat) thì dùng nó, không thì dùng sendMessage từ store
+      if (onSendMessage) {
+        await onSendMessage(messageData);
+      } else {
+        await sendMessage(messageData);
+      }
+
       setText("");
       setImagePreview(null);
       setFilePreview(null); // ✅ THÊM

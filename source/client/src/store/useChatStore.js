@@ -45,7 +45,13 @@ export const useChatStore = create((set, get) => ({
         `/messages/send/${selectedUser._id}`,
         messageData
       );
-      set({ messages: [...messages, res.data] });
+      // ✅ Thêm tin nhắn của mình vào state (vì server không emit cho người gửi)
+      // Kiểm tra xem đã tồn tại chưa trước khi thêm
+      const messageExists = messages.some(msg => msg._id === res.data._id);
+      if (!messageExists) {
+        set({ messages: [...messages, res.data] });
+        console.log("✅ Own message added to state:", res.data._id);
+      }
     } catch (error) {
       toast.error(error.response.data.message);
     }
@@ -94,6 +100,12 @@ export const useChatStore = create((set, get) => ({
     if (!selectedUser) return;
     
     const socket = useAuthStore.getState().socket;
+    if (!socket) return;
+
+    // ✅ QUAN TRỌNG: Unsubscribe trước để tránh duplicate listeners
+    socket.off("newMessage");
+    socket.off("message_seen_update");
+    socket.off("user-typing");
 
     // ✅ Subscribe to new messages
     socket.on("newMessage", (newMessage) => {
@@ -112,6 +124,13 @@ export const useChatStore = create((set, get) => ({
           })
         }));
         return; // Không thêm vào messages vì không phải chat hiện tại
+      }
+
+      // ✅ Kiểm tra xem tin nhắn đã tồn tại chưa (tránh duplicate)
+      const messageExists = get().messages.some(msg => msg._id === newMessage._id);
+      if (messageExists) {
+        console.log("⚠️ Message already exists, skipping:", newMessage._id);
+        return;
       }
 
       // ✅ Nếu tin nhắn từ người đang chat
@@ -143,6 +162,7 @@ export const useChatStore = create((set, get) => ({
     
     // ✅ Subscribe to typing events
     socket.on("user-typing", ({ userId, isTyping }) => {
+      console.log("👤 User typing event:", { userId, isTyping });
       const { setUserTyping, setUserStoppedTyping } = get();
       
       if (isTyping) {
