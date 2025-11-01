@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
   {
-    senderId: { // be a reference to the user model
+    senderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    receiverId: { // be a reference to the user model
+    receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -18,14 +18,21 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    // ✅ THÊM: Field cho file
+    file: {
+      url: { type: String },
+      name: { type: String },
+      size: { type: Number },
+      type: { type: String },
+    },
     read: {
-      type: Boolean,
-      default: false, // Mặc định tin nhắn mới là chưa đọc
-    },
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 const Message = mongoose.model("Message", messageSchema);
 
-export default Message; 
+export default Message;
