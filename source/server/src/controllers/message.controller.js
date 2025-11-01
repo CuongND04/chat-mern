@@ -7,12 +7,10 @@ export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
 
-    // Get all users except logged in user
     const filteredUsers = await User.find({
       _id: { $ne: loggedInUserId },
     }).select("-password");
 
-    // ✅ Đếm số tin nhắn chưa đọc cho mỗi user
     const usersWithUnreadCount = await Promise.all(
       filteredUsers.map(async (user) => {
         const unreadCount = await Message.countDocuments({
@@ -34,9 +32,9 @@ export const getUsersForSidebar = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 export const getMessages = async (req, res) => {
   try {
-    // get values of dynamic params and rename parameter "id" to "userToCharId"
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
     const messages = await Message.find({
@@ -51,29 +49,27 @@ export const getMessages = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-// ✅ THÊM: Hàm cập nhật trạng thái tin nhắn thành đã đọc
+
 export const markMessagesAsRead = async (req, res) => {
   try {
-    // senderId trong route này chính là ID của người gửi tin nhắn (Người A)
-    const { id: senderId } = req.params; // ID của người nhận (người đang đăng nhập, người xem tin nhắn - Người B)
-    const receiverId = req.user._id; // 1. Cập nhật TẤT CẢ tin nhắn chưa đọc thành read: true trong DB
+    const { id: senderId } = req.params;
+    const receiverId = req.user._id;
 
     await Message.updateMany(
       {
         senderId: senderId,
         receiverId: receiverId,
-        read: false, // Chỉ cập nhật những tin nhắn chưa đọc
+        read: false,
       },
       { read: true }
-    ); // 2. Socket.io Emit để thông báo cho người gửi (A) biết B đã đọc
+    );
 
     const senderSocketId = getReceiverSocketId(senderId);
 
     if (senderSocketId) {
-      // Gửi sự kiện message_seen_update chỉ đến người gửi (A)
       io.to(senderSocketId).emit("message_seen_update", {
         senderId: senderId,
-        receiverId: receiverId, // Không cần gửi danh sách messages, Frontend sẽ tự cập nhật.
+        receiverId: receiverId,
       });
     }
 
@@ -83,30 +79,59 @@ export const markMessagesAsRead = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text, image, file } = req.body; // ✅ THÊM: file
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
     let imageUrl;
+    let fileData;
+
+    // Upload image nếu có
     if (image) {
-      // upload base64 image to Cloudinary
       const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl = uploadResponse.secure_url;
     }
+
+    // ✅ THÊM: Upload file nếu có
+    if (file) {
+  try {
+    const uploadResponse = await cloudinary.uploader.upload(file.base64, {
+      resource_type: "raw",
+      folder: "chat_files",
+      public_id: file.name.split('.')[0], // Tên file không có extension
+      // ✅ THÊM: Format để giữ extension
+      format: file.name.split('.').pop(), // Lấy extension
+    });
+    
+    fileData = {
+      url: uploadResponse.secure_url,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    };
+  } catch (uploadError) {
+    console.log("Error uploading file to Cloudinary:", uploadError.message);
+    return res.status(500).json({ message: "Failed to upload file" });
+  }
+}
+
     const newMessage = new Message({
       senderId,
       receiverId,
       text,
       image: imageUrl,
+      file: fileData, // ✅ THÊM
     });
+    
     await newMessage.save();
     console.log("newMessage: ", newMessage);
-    // gửi message đến bên nhật theo thời gian thực
+
+    // Gửi message đến người nhận theo thời gian thực
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
-      // chỉ có receiverSocketId mới nhận được thông điệp
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
