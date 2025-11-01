@@ -102,13 +102,7 @@ export const useAuthStore = create((set, get) => ({
     const { authUser } = get();
     // nếu chưa xác thực hoặc đã kết nối rồi thì không kết nối lại nữa
     if (!authUser || get().socket?.connected) return;
-    const socket = io(BASE_URL);
-    socket.connect();
-  },
-  connectSocket: async () => {
-    const { authUser } = get();
-    // nếu chưa xác thực hoặc đã kết nối rồi thì không kết nối lại nữa
-    if (!authUser || get().socket?.connected) return;
+    
     const socket = io(BASE_URL, {
       query: {
         userId: authUser._id, // đây là cái dùng để handshake.query
@@ -117,9 +111,18 @@ export const useAuthStore = create((set, get) => ({
     socket.connect();
 
     set({ socket: socket });
+    
+    console.log("✅ Socket connected:", socket.id);
+    
     // emit bằng tên gì thì mình phải lắng nghe bằng tên đấy
     socket.on("getOnlineUsers", (userIds) => {
+      console.log("📡 Online users updated:", userIds);
       set({ onlineUsers: userIds });
+    });
+
+    // Debug: Log tất cả socket events
+    socket.onAny((eventName, ...args) => {
+      console.log(`📩 Socket event received: ${eventName}`, args);
     });
   },
 

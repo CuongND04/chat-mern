@@ -1,10 +1,13 @@
 import { useChatStore } from "../store/useChatStore";
+import { useGroupStore } from "../store/useGroupStore";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
+import GroupChatContainer from "../components/GroupChatContainer";
 
 const HomePage = () => {
   const { selectedUser } = useChatStore();
+  const { selectedGroup } = useGroupStore();
 
   return (
     <div
@@ -22,7 +25,9 @@ const HomePage = () => {
         "
       >
         <Sidebar />
-        {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
+        {!selectedUser && !selectedGroup && <NoChatSelected />}
+        {selectedUser && <ChatContainer />}
+        {selectedGroup && <GroupChatContainer />}
       </div>
     </div>
   );

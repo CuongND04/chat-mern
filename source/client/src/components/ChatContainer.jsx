@@ -15,9 +15,10 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
+    typingUsers,
   } = useChatStore();
 
-  const { authUser } = useAuthStore();
+  const { authUser, onlineUsers } = useAuthStore();
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -37,6 +38,13 @@ const ChatContainer = () => {
     }
     console.log("messages: ", messages);
   }, [messages]);
+
+  // ✅ THÊM: Auto scroll khi có typing indicator
+  useEffect(() => {
+    if (messagesEndRef.current && typingUsers.has(selectedUser?._id)) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [typingUsers, selectedUser]);
 
   const lastMessageIndex = messages.length > 0 ? messages.length - 1 : -1;
 
@@ -118,8 +126,8 @@ const ChatContainer = () => {
                     isOwn ? "flex-row-reverse" : ""
                   }`}
                 >
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full border-2 border-black bg-white overflow-hidden shrink-0">
+                  {/* Avatar với online status */}
+                  <div className="relative w-10 h-10 rounded-full border-2 border-black bg-white overflow-hidden shrink-0">
                     <img
                       src={
                         isOwn
@@ -129,6 +137,10 @@ const ChatContainer = () => {
                       alt="profile"
                       className="w-full h-full object-cover"
                     />
+                    {/* ✅ THÊM: Dấu xanh online cho người gửi */}
+                    {!isOwn && onlineUsers.includes(selectedUser?._id) && (
+                      <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-black rounded-full" />
+                    )}
                   </div>
 
                   {/* Nội dung */}
@@ -215,6 +227,41 @@ const ChatContainer = () => {
             </div>
           );
         })}
+
+        {/* ✅ THÊM: Typing Indicator - Hiển thị khi người dùng đang gõ */}
+        {typingUsers.has(selectedUser?._id) && (
+          <div className="flex w-full justify-start">
+            <div className="flex items-end gap-2">
+              {/* Avatar với online status */}
+              <div className="relative w-10 h-10 rounded-full border-2 border-black bg-white overflow-hidden shrink-0">
+                <img
+                  src={selectedUser?.profilePic || "/statics/10.jpg"}
+                  alt="profile"
+                  className="w-full h-full object-cover"
+                />
+                {/* ✅ THÊM: Dấu xanh online */}
+                {onlineUsers.includes(selectedUser?._id) && (
+                  <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-black rounded-full" />
+                )}
+              </div>
+
+              {/* Typing bubble với animation */}
+              <div className="flex flex-col items-start">
+                <div className="text-xs font-semibold opacity-60 mb-1">
+                  Đang gõ...
+                </div>
+                <div className="inline-flex items-center gap-1 px-4 py-3 rounded-xl border-2 border-black shadow-[2px_2px_0_#000] bg-[#FFF2AC] text-black rounded-bl-none">
+                  {/* 3 dots animation giống Messenger */}
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-[#74C0FC] border border-black rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1s' }}></span>
+                    <span className="w-2 h-2 bg-[#74C0FC] border border-black rounded-full animate-bounce" style={{ animationDelay: '150ms', animationDuration: '1s' }}></span>
+                    <span className="w-2 h-2 bg-[#74C0FC] border border-black rounded-full animate-bounce" style={{ animationDelay: '300ms', animationDuration: '1s' }}></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div ref={messagesEndRef} />
       </div>
