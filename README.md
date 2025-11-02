@@ -235,12 +235,12 @@ npm run dev
 ## 📊 KẾT QUẢ THỰC NGHIỆM
 
 ### **Giao diện chính**
-![Ảnh 1](statics\images\image1.jpg)
-![Ảnh 2](statics\images\image2.jpg)
-![Ảnh 3](statics\images\image3.jpg)
-![Ảnh 4](statics\images\image4.jpg)
-![Ảnh 5](statics\images\image5.jpg)
-![Ảnh 6](statics\images\image6.jpg)
+![Ảnh 1](./statics/images/image1.jpg)
+![Ảnh 2](./statics/images/image2.jpg)
+![Ảnh 3](./statics/images/image3.jpg)
+![Ảnh 4](./statics/images/image4.jpg)
+![Ảnh 5](./statics/images/image5.jpg)
+![Ảnh 6](./statics/images/image6.jpg)
 
 ### **Tính năng đã test:**
 ✅ Đăng ký và đăng nhập thành công  
