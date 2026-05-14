@@ -1,0 +1,9 @@
+# AI / local assistant files
+.codex/
+
+# build + deps
+source/client/node_modules/
+source/client/dist/
+
+# optional: nếu không muốn đẩy file style guide AI sinh ra
+design-system/
