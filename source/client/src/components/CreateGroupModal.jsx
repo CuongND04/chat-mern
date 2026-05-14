@@ -1,8 +1,10 @@
-import React, { useState, useRef } from "react";
-import { X, Camera, Users } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Camera, Users } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 import toast from "react-hot-toast";
+import ModalShell from "./ui/ModalShell";
+import Panel from "./ui/Panel";
 
 const CreateGroupModal = ({ isOpen, onClose }) => {
   const [groupName, setGroupName] = useState("");
@@ -17,20 +19,22 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setSelectedImage(reader.result);
-    };
+    reader.onloadend = () => setSelectedImage(reader.result);
     reader.readAsDataURL(file);
   };
 
   const toggleMember = (userId) => {
     setSelectedMembers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
+  };
+
+  const resetForm = () => {
+    setGroupName("");
+    setGroupDescription("");
+    setSelectedImage(null);
+    setSelectedMembers([]);
   };
 
   const handleSubmit = async (e) => {
@@ -53,158 +57,143 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
         memberIds: selectedMembers,
         groupPic: selectedImage,
       });
-
-      // Reset form
-      setGroupName("");
-      setGroupDescription("");
-      setSelectedImage(null);
-      setSelectedMembers([]);
+      resetForm();
       onClose();
     } catch (error) {
       console.error("Failed to create group:", error);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 z-[10000] flex items-start justify-center px-4 pt-20 pb-8">
-      <div className="bg-[#FDFCF5] border-4 border-black rounded-2xl shadow-[8px_8px_0_#000] max-w-lg w-full max-h-[85vh] overflow-y-auto relative">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b-4 border-black bg-[#FFD43B]">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-[#74C0FC] border-3 border-black rounded-full flex items-center justify-center">
-              <Users size={18} className="text-black" />
-            </div>
-            <h2 className="text-lg font-black text-black">Create New Group</h2>
-          </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={() => {
+        resetForm();
+        onClose();
+      }}
+      title="Create group"
+      subtitle="Start a shared conversation space for projects, classes, or teams."
+      icon={Users}
+      footer={
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
-            onClick={onClose}
-            className="w-7 h-7 bg-red-500 border-3 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
+            type="button"
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
+            className="secondary-button min-h-10 px-4 text-[12px] font-medium"
           >
-            <X size={14} className="text-white" />
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-group-form"
+            className="primary-button min-h-10 px-4 text-[12px] font-medium"
+          >
+            Create group
           </button>
         </div>
-
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Group Picture */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full border-3 border-black bg-[#FFD43B] overflow-hidden shadow-[3px_3px_0_#000]">
-                {selectedImage ? (
-                  <img
-                    src={selectedImage}
-                    alt="Group"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Users size={36} className="text-black" />
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-[#74C0FC] border-2 border-black rounded-full flex items-center justify-center shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#000] transition-all"
-              >
-                <Camera size={16} className="text-black" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
+      }
+    >
+      <form id="create-group-form" onSubmit={handleSubmit} className="space-y-5">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[color:var(--surface-2)]">
+              {selectedImage ? (
+                <img src={selectedImage} alt="Group preview" className="h-full w-full object-cover" />
+              ) : (
+                <Users className="h-8 w-8 text-[color:var(--text-muted)]" />
+              )}
             </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="secondary-button absolute bottom-0 right-0 h-9 w-9 rounded-full p-0"
+              aria-label="Upload group picture"
+            >
+              <Camera className="h-4 w-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
           </div>
+          <p className="text-[12px] font-medium text-[color:var(--text-muted)]">Optional group cover</p>
+        </div>
 
-          {/* Group Name */}
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-black mb-1">
-              Group Name *
+            <label className="mb-2 block text-[12px] font-medium text-[color:var(--text-strong)]">
+              Group name
             </label>
             <input
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Enter group name"
-              className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] focus:outline-none focus:translate-y-[1px] focus:shadow-[1px_1px_0_#000] transition-all font-medium text-sm"
+              placeholder="Design review team"
+              className="input-base"
               maxLength={50}
             />
           </div>
 
-          {/* Group Description */}
           <div>
-            <label className="block text-xs font-bold text-black mb-1">
-              Description (Optional)
+            <label className="mb-2 block text-[12px] font-medium text-[color:var(--text-strong)]">
+              Description
             </label>
             <textarea
               value={groupDescription}
               onChange={(e) => setGroupDescription(e.target.value)}
-              placeholder="What's this group about?"
-              className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] focus:outline-none focus:translate-y-[1px] focus:shadow-[1px_1px_0_#000] transition-all font-medium resize-none text-sm"
-              rows={2}
+              placeholder="Context or purpose for this room"
+              className="input-base min-h-[110px] resize-none"
               maxLength={200}
             />
           </div>
+        </div>
 
-          {/* Select Members */}
-          <div>
-            <label className="block text-xs font-bold text-black mb-2">
-              Add Members * ({selectedMembers.length} selected)
-            </label>
-            <div className="max-h-48 overflow-y-auto border-2 border-black rounded-lg bg-white p-2 space-y-1">
-              {users.map((user) => (
-                <div
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <label className="text-[12px] font-medium text-[color:var(--text-strong)]">Members</label>
+            <span className="text-[12px] text-[color:var(--text-muted)]">{selectedMembers.length} selected</span>
+          </div>
+          <Panel className="scrollbar-subtle max-h-72 space-y-2 overflow-y-auto bg-[color:var(--surface-2)] p-2">
+            {users.map((user) => {
+              const isSelected = selectedMembers.includes(user._id);
+              return (
+                <button
                   key={user._id}
+                  type="button"
                   onClick={() => toggleMember(user._id)}
-                  className={`flex items-center gap-2 p-2 rounded-lg border-2 border-black cursor-pointer transition-all ${
-                    selectedMembers.includes(user._id)
-                      ? "bg-[#74C0FC] shadow-[1px_1px_0_#000]"
-                      : "bg-white hover:bg-gray-50"
+                  className={`flex w-full items-center gap-3 rounded-[var(--radius-md)] border px-3 py-3 text-left transition ${
+                    isSelected
+                      ? "border-[color:var(--brand-100)] bg-[color:var(--brand-50)]"
+                      : "border-transparent bg-white hover:border-[color:var(--border-soft)]"
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={selectedMembers.includes(user._id)}
+                    checked={isSelected}
                     onChange={() => {}}
-                    className="w-4 h-4 border-2 border-black rounded"
+                    className="h-4 w-4 rounded accent-[color:var(--brand-500)]"
                   />
                   <img
                     src={user.profilePic || "/statics/10.jpg"}
                     alt={user.fullName}
-                    className="w-8 h-8 rounded-full border-2 border-black object-cover"
+                    className="h-10 w-10 rounded-full object-cover"
                   />
-                  <span className="font-semibold text-black flex-1 text-sm">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-[color:var(--text-strong)]">
                     {user.fullName}
                   </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-300 border-2 border-black rounded-lg font-bold text-black text-sm shadow-[3px_3px_0_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000] transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-[#74C0FC] border-2 border-black rounded-lg font-bold text-black text-sm shadow-[3px_3px_0_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000] transition-all"
-            >
-              Create Group
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+                </button>
+              );
+            })}
+          </Panel>
+        </div>
+      </form>
+    </ModalShell>
   );
 };
 
