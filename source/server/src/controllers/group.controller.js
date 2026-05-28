@@ -336,8 +336,8 @@ export const updateGroupInfo = async (req, res) => {
       return res.status(403).json({ message: "Only admin can update group info" });
     }
 
-    if (name) group.name = name;
-    if (description) group.description = description;
+    if (name !== undefined) group.name = name;
+    if (description !== undefined) group.description = description;
 
     if (groupPic) {
       const uploadResponse = await cloudinary.uploader.upload(groupPic);
