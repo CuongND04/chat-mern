@@ -1,32 +1,45 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { Image, Paperclip, Send, Smile, X } from "lucide-react";
+import { Image, Send, X, Paperclip, File, Smile } from "lucide-react";
 import toast from "react-hot-toast";
-import AttachmentCard from "./chat/AttachmentCard";
 
 const MessageInput = ({ onSendMessage }) => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false); // ✅ THÊM
   const [isTyping, setIsTyping] = useState(false);
-
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const emojiPickerRef = useRef(null);
-
+  const emojiPickerRef = useRef(null); // ✅ THÊM
+  
   const { sendMessage, selectedUser } = useChatStore();
   const { selectedGroup } = useGroupStore();
   const { socket } = useAuthStore();
 
+  // ✅ THÊM: Danh sách emoji phổ biến
   const emojis = [
-    "😀", "😄", "🙂", "😉", "😍", "😘", "🤔", "😴", "😎", "🥳",
-    "😭", "😡", "👍", "👎", "👏", "🙏", "❤️", "🔥", "✨", "🎉",
+    "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
+    "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙",
+    "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔",
+    "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥",
+    "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮",
+    "🤧", "🥵", "🥶", "😶‍🌫️", "😵", "🤯", "🤠", "🥳", "😎", "🤓",
+    "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺",
+    "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣",
+    "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "👍",
+    "👎", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👌",
+    "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐️", "🖖",
+    "👋", "🤙", "💪", "🦾", "🖕", "✍️", "🙏", "🦶", "🦵", "❤️",
+    "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️",
+    "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "🔥", "✨",
+    "⭐", "🌟", "💫", "💥", "💯", "🎉", "🎊", "🎈", "🎁", "🏆"
   ];
 
+  // ✅ THÊM: Đóng emoji picker khi click bên ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -35,62 +48,21 @@ const MessageInput = ({ onSendMessage }) => {
     };
 
     if (showEmojiPicker) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showEmojiPicker]);
 
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      if (isTyping && socket) {
-        if (selectedUser) {
-          socket.emit("stop-typing", { receiverId: selectedUser._id });
-        } else if (selectedGroup) {
-          socket.emit("groupTyping", {
-            groupId: selectedGroup._id,
-            isTyping: false,
-          });
-        }
-      }
-    };
-  }, [selectedUser, selectedGroup, isTyping, socket]);
-
-  const emitTyping = (isNowTyping, currentValue) => {
-    if (!socket) return;
-
-    if (!isTyping && isNowTyping && currentValue.trim()) {
-      setIsTyping(true);
-      if (selectedUser) {
-        socket.emit("typing", { receiverId: selectedUser._id });
-      } else if (selectedGroup) {
-        socket.emit("groupTyping", { groupId: selectedGroup._id, isTyping: true });
-      }
-    }
-
-    clearTimeout(typingTimeoutRef.current);
-
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      if (selectedUser) {
-        socket.emit("stop-typing", { receiverId: selectedUser._id });
-      } else if (selectedGroup) {
-        socket.emit("groupTyping", { groupId: selectedGroup._id, isTyping: false });
-      }
-    }, 2000);
+  // ✅ THÊM: Thêm emoji vào text
+  const handleEmojiClick = (emoji) => {
+    setText(prev => prev + emoji);
+    setShowEmojiPicker(false);
   };
 
-  const handleInputChange = (e) => {
-    const nextValue = e.target.value;
-    setText(nextValue);
-    emitTyping(true, nextValue);
-  };
-
+  // Xử lý chọn ảnh
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
@@ -103,28 +75,31 @@ const MessageInput = ({ onSendMessage }) => {
     reader.readAsDataURL(file);
   };
 
+  // ✅ THÊM: Xử lý chọn file
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const maxSize = 10 * 1024 * 1024;
+    // Kiểm tra kích thước file (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       toast.error("File size must be less than 10MB");
       return;
     }
 
+    // Kiểm tra loại file cho phép
     const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/zip",
-      "text/plain",
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip',
+      'text/plain'
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Unsupported file. Please upload PDF, DOC, DOCX, XLS, XLSX, ZIP, or TXT");
+      toast.error("File type not supported. Please upload PDF, DOC, DOCX, XLS, XLSX, ZIP, or TXT");
       return;
     }
 
@@ -134,8 +109,7 @@ const MessageInput = ({ onSendMessage }) => {
         base64: reader.result,
         name: file.name,
         size: file.size,
-        type: file.type,
-        url: "",
+        type: file.type
       });
     };
     reader.readAsDataURL(file);
@@ -146,10 +120,80 @@ const MessageInput = ({ onSendMessage }) => {
     if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
+  // ✅ THÊM: Xóa file preview
   const removeFile = () => {
     setFilePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleInputChange = (e) => {
+    setText(e.target.value);
+
+    if (!socket) {
+      console.log("❌ Socket not connected");
+      return;
+    }
+
+    // ✅ Xử lý typing cho cả 1-1 chat và group chat
+    if (!isTyping && e.target.value.trim()) {
+      setIsTyping(true);
+      
+      if (selectedUser) {
+        // 1-1 chat
+        console.log("⌨️ Emitting typing to user:", selectedUser._id);
+        socket.emit("typing", { receiverId: selectedUser._id });
+      } else if (selectedGroup) {
+        // Group chat
+        console.log("⌨️ Emitting group typing to group:", selectedGroup._id);
+        socket.emit("groupTyping", { 
+          groupId: selectedGroup._id,
+          isTyping: true 
+        });
+      }
+    }
+
+    clearTimeout(typingTimeoutRef.current);
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      
+      if (selectedUser) {
+        console.log("⏹️ Emitting stop-typing to user:", selectedUser._id);
+        socket.emit("stop-typing", { receiverId: selectedUser._id });
+      } else if (selectedGroup) {
+        console.log("⏹️ Emitting stop group typing to group:", selectedGroup._id);
+        socket.emit("groupTyping", { 
+          groupId: selectedGroup._id,
+          isTyping: false 
+        });
+      }
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTyping && socket) {
+        if (selectedUser) {
+          socket.emit("stop-typing", { receiverId: selectedUser._id });
+        } else if (selectedGroup) {
+          socket.emit("groupTyping", { 
+            groupId: selectedGroup._id,
+            isTyping: false 
+          });
+        }
+      }
+    };
+  }, [selectedUser, selectedGroup, isTyping, socket]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -158,20 +202,25 @@ const MessageInput = ({ onSendMessage }) => {
     if (isTyping && socket) {
       clearTimeout(typingTimeoutRef.current);
       setIsTyping(false);
+      
       if (selectedUser) {
         socket.emit("stop-typing", { receiverId: selectedUser._id });
       } else if (selectedGroup) {
-        socket.emit("groupTyping", { groupId: selectedGroup._id, isTyping: false });
+        socket.emit("groupTyping", { 
+          groupId: selectedGroup._id,
+          isTyping: false 
+        });
       }
     }
 
     try {
-      const messageData = {
-        text: text.trim(),
+      const messageData = { 
+        text: text.trim(), 
         image: imagePreview,
-        file: filePreview,
+        file: filePreview // ✅ THÊM
       };
 
+      // ✅ Nếu có onSendMessage prop (Group Chat) thì dùng nó, không thì dùng sendMessage từ store
       if (onSendMessage) {
         await onSendMessage(messageData);
       } else {
@@ -180,8 +229,7 @@ const MessageInput = ({ onSendMessage }) => {
 
       setText("");
       setImagePreview(null);
-      setFilePreview(null);
-      setShowEmojiPicker(false);
+      setFilePreview(null); // ✅ THÊM
       if (imageInputRef.current) imageInputRef.current.value = "";
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
@@ -190,77 +238,56 @@ const MessageInput = ({ onSendMessage }) => {
   };
 
   return (
-    <div className="sticky bottom-0 border-t border-[color:var(--border-soft)] bg-white/96 px-4 py-3 backdrop-blur-md sm:px-5">
-      {(imagePreview || filePreview) && (
-        <div className="mb-3 flex flex-wrap gap-3">
-          {imagePreview && (
-            <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-[color:var(--border-soft)] bg-[color:var(--surface-1)] p-2 shadow-[var(--shadow-sm)]">
-              <img src={imagePreview} alt="Preview" className="h-20 w-20 rounded-[12px] object-cover" />
-              <button
-                type="button"
-                onClick={removeImage}
-                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[color:var(--text-strong)] shadow-[var(--shadow-sm)]"
-                aria-label="Remove image"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-
-          {filePreview && (
-            <div className="relative min-w-[240px] max-w-sm">
-              <AttachmentCard file={filePreview} onDownload={() => {}} />
-              <button
-                type="button"
-                onClick={removeFile}
-                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[color:var(--text-strong)] shadow-[var(--shadow-sm)]"
-                aria-label="Remove file"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+    <div className="p-4 w-full bg-[#FDFCF5] border-t-4 border-black">
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="mb-3 flex items-center gap-3">
+          <div className="relative border-2 border-black rounded-lg shadow-[3px_3px_0_#000] overflow-hidden bg-white">
+            <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover" />
+            <button
+              onClick={removeImage}
+              type="button"
+              className="absolute -top-2 -right-2 w-6 h-6 bg-red-400 border-2 border-black rounded-full flex items-center justify-center hover:translate-y-[1px] hover:shadow-none transition-all shadow-[2px_2px_0_#000]"
+            >
+              <X size={14} className="text-black" />
+            </button>
+          </div>
         </div>
       )}
 
-      <form
-        onSubmit={handleSendMessage}
-        className="relative flex items-end gap-1.5 rounded-[var(--radius-lg)] border border-[color:var(--border-soft)] bg-[color:var(--surface-1)] p-1.5"
-      >
-        <div className="relative" ref={emojiPickerRef}>
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker((prev) => !prev)}
-            className={`icon-button ${showEmojiPicker ? "bg-[color:var(--brand-50)] text-[color:var(--brand-500)]" : "subtle-button"}`}
-            aria-label="Open emoji picker"
-          >
-            <Smile className="h-4 w-4" />
-          </button>
-
-          {showEmojiPicker && (
-            <div className="absolute bottom-full left-0 mb-3 w-[280px] rounded-[var(--radius-lg)] border border-[color:var(--border-soft)] bg-white p-3 shadow-[var(--shadow-lg)]">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--text-muted)]">
-                Quick reactions
-              </p>
-              <div className="grid grid-cols-5 gap-2">
-                {emojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => {
-                      setText((prev) => prev + emoji);
-                      setShowEmojiPicker(false);
-                    }}
-                    className="flex h-11 w-11 items-center justify-center rounded-[12px] text-xl transition hover:bg-[color:var(--surface-2)]"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+      {/* ✅ THÊM: File Preview */}
+      {filePreview && (
+        <div className="mb-3 flex items-center gap-3">
+          <div className="relative border-2 border-black rounded-lg shadow-[3px_3px_0_#000] bg-white p-3 flex items-center gap-3 pr-10">
+            <div className="w-10 h-10 bg-[#FFD43B] border-2 border-black rounded flex items-center justify-center">
+              <File size={20} />
             </div>
-          )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm truncate">{filePreview.name}</p>
+              <p className="text-xs text-gray-500">{formatFileSize(filePreview.size)}</p>
+            </div>
+            <button
+              onClick={removeFile}
+              type="button"
+              className="absolute -top-2 -right-2 w-6 h-6 bg-red-400 border-2 border-black rounded-full flex items-center justify-center hover:translate-y-[1px] hover:shadow-none transition-all shadow-[2px_2px_0_#000]"
+            >
+              <X size={14} className="text-black" />
+            </button>
+          </div>
         </div>
+      )}
 
+      {/* Input form */}
+      <form onSubmit={handleSendMessage} className="flex items-center gap-3 bg-white border-4 border-black rounded-lg px-3 py-2 shadow-[4px_4px_0_#000] focus-within:translate-y-[2px] focus-within:shadow-none transition-all relative">
+        <input
+          type="text"
+          placeholder="Type a message..."
+          value={text}
+          onChange={handleInputChange}
+          className="flex-1 bg-transparent outline-none text-black placeholder-gray-500 font-medium"
+        />
+
+        {/* Hidden inputs */}
         <input
           type="file"
           accept="image/*"
@@ -276,39 +303,64 @@ const MessageInput = ({ onSendMessage }) => {
           onChange={handleFileChange}
         />
 
+        {/* ✅ THÊM: Emoji Picker Popup */}
+        {showEmojiPicker && (
+          <div
+            ref={emojiPickerRef}
+            className="absolute bottom-full left-0 mb-2 w-96 h-72 bg-white border-4 border-black rounded-lg shadow-[4px_4px_0_#000] overflow-hidden z-50"
+          >
+            <div className="p-3 border-b-2 border-black bg-[#FFF2AC]">
+              <p className="font-bold text-sm">Select Emoji</p>
+            </div>
+            <div className="grid grid-cols-10 gap-2 p-4 overflow-y-auto h-56">
+              {emojis.map((emoji, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleEmojiClick(emoji)}
+                  className="text-2xl hover:bg-[#FFF2AC] rounded-md p-2 transition-all border-2 border-transparent hover:border-black hover:scale-110 flex items-center justify-center w-10 h-10"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ✅ THÊM: Emoji Button */}
+        <button
+          type="button"
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          className={`w-10 h-10 flex items-center justify-center rounded-md border-2 border-black bg-[#FFE066] shadow-[2px_2px_0_#000] transition-all hover:translate-y-[1px] hover:shadow-none ${showEmojiPicker ? "bg-[#B9E6C9]" : ""}`}
+        >
+          <Smile size={20} />
+        </button>
+
+        {/* File Button */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className={`icon-button ${filePreview ? "bg-[color:var(--brand-50)] text-[color:var(--brand-500)]" : "subtle-button"}`}
-          aria-label="Attach file"
+          className={`w-10 h-10 flex items-center justify-center rounded-md border-2 border-black bg-[#FFD43B] shadow-[2px_2px_0_#000] transition-all hover:translate-y-[1px] hover:shadow-none ${filePreview ? "bg-[#B9E6C9]" : ""}`}
         >
-          <Paperclip className="h-4 w-4" />
+          <Paperclip size={20} />
         </button>
 
+        {/* Image Button */}
         <button
           type="button"
           onClick={() => imageInputRef.current?.click()}
-          className={`icon-button ${imagePreview ? "bg-[color:var(--brand-50)] text-[color:var(--brand-500)]" : "subtle-button"}`}
-          aria-label="Attach image"
+          className={`w-10 h-10 flex items-center justify-center rounded-md border-2 border-black bg-[#FFF2AC] shadow-[2px_2px_0_#000] transition-all hover:translate-y-[1px] hover:shadow-none ${imagePreview ? "bg-[#B9E6C9]" : ""}`}
         >
-          <Image className="h-4 w-4" />
+          <Image size={20} />
         </button>
 
-        <textarea
-          rows={1}
-          placeholder="Write a message"
-          value={text}
-          onChange={handleInputChange}
-          className="max-h-32 min-h-[38px] flex-1 resize-none bg-transparent px-2 py-2 text-[13px] leading-6 text-[color:var(--text-strong)] outline-none placeholder:text-[color:var(--text-faint)]"
-        />
-
+        {/* Send Button */}
         <button
           type="submit"
           disabled={!text.trim() && !imagePreview && !filePreview}
-          className="primary-button h-9 min-w-9 rounded-[10px] px-3 disabled:cursor-not-allowed disabled:opacity-45"
-          aria-label="Send message"
+          className="w-10 h-10 flex items-center justify-center rounded-md border-2 border-black bg-[#74C0FC] shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Send className="h-4 w-4" />
+          <Send size={20} />
         </button>
       </form>
     </div>

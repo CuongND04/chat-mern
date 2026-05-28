@@ -1,5 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
-import { generateToken } from "../lib/utils.js";
+import { clearTokenCookie, generateToken, sanitizeUser } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 export const signup = async (req, res) => {
@@ -36,12 +36,7 @@ export const signup = async (req, res) => {
       await newUser.save();
 
       // 201: which means something has been created
-      res.status(201).json({
-        _id: newUser._id,
-        fullName: newUser.fullName,
-        email: newUser.email,
-        profilePic: newUser.profilePic,
-      });
+      res.status(201).json(sanitizeUser(newUser));
     } else {
       res.status(400).json({ message: "Invalid user data" });
     }
@@ -68,12 +63,7 @@ export const login = async (req, res) => {
     // create jwt
     generateToken(user._id, res);
     // return response for login request
-    res.status(200).json({
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-    });
+    res.status(200).json(sanitizeUser(user));
   } catch (error) {
     console.log("Error in login controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -82,7 +72,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    clearTokenCookie(res);
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log("Error in login controller", error.message);
@@ -102,6 +92,17 @@ export const updateProfile = async (req, res) => {
       updateFields.profilePic = uploadResponse.secure_url;
     }
 
+    if (email && email !== req.user.email) {
+      const emailExists = await User.findOne({
+        email,
+        _id: { $ne: userId },
+      });
+
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+    }
+
     // Nếu có các trường khác -> thêm vào updateFields
     if (fullName) updateFields.fullName = fullName;
     if (email) updateFields.email = email;
@@ -113,9 +114,9 @@ export const updateProfile = async (req, res) => {
       userId,
       { $set: updateFields },
       { new: true }
-    );
+    ).select("-password");
 
-    res.status(200).json(updatedUser);
+    res.status(200).json(sanitizeUser(updatedUser));
   } catch (error) {
     console.error("Error in update profile:", error.message);
     res.status(500).json({ message: "Internal Server Error" });

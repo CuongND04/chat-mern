@@ -19,18 +19,17 @@ const App = () => {
   // display spin load if it is checking
   if (isCheckingAuth && !authUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-6">
-        <div className="workspace-shell flex items-center gap-3 rounded-[var(--radius-lg)] px-5 py-4 text-[color:var(--text-strong)]">
-          <Loader className="size-4 animate-spin text-[color:var(--brand-500)]" />
-          <span className="text-[13px] font-medium">Preparing workspace</span>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="size-10 animate-spin" />
       </div>
     );
   }
   return (
-    <div className="min-h-screen text-[color:var(--text-body)]">
+    <div>
       <Navbar />
+      {/* <Routes> A component that matches the current URL with defined routes and renders the appropriate one. */}
       <Routes>
+        {/* <Route>: Defines a specific path and the component to display when the URL matches that path. */}
         <Route
           path="/"
           element={authUser ? <HomePage /> : <Navigate to="/login" />}
@@ -49,33 +48,7 @@ const App = () => {
         />
       </Routes>
 
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3500,
-          style: {
-            background: "var(--surface-1)",
-            color: "var(--text-strong)",
-            border: "1px solid var(--border-soft)",
-            borderRadius: "14px",
-            boxShadow: "var(--shadow-md)",
-            padding: "10px 12px",
-            fontSize: "13px",
-          },
-          success: {
-            iconTheme: {
-              primary: "var(--success-500)",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: "var(--danger-500)",
-              secondary: "#fff",
-            },
-          },
-        }}
-      />
+      <Toaster />
     </div>
   );
 };

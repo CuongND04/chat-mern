@@ -1,17 +1,28 @@
-import React, { useRef, useState } from "react";
-import { Camera, Crown, Edit3, LogOut, UserMinus, UserPlus, Users } from "lucide-react";
+import React, { useState, useRef } from "react";
+import {
+  X,
+  Users,
+  Crown,
+  UserPlus,
+  LogOut,
+  Edit,
+  UserMinus,
+  Camera,
+} from "lucide-react";
 import { useGroupStore } from "../store/useGroupStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import toast from "react-hot-toast";
-import ModalShell from "./ui/ModalShell";
-import Panel from "./ui/Panel";
-import EmptyState from "./ui/EmptyState";
 
 const GroupSettingsModal = ({ isOpen, onClose, group }) => {
   const { authUser } = useAuthStore();
   const { users } = useChatStore();
-  const { addMembersToGroup, removeMemberFromGroup, leaveGroup, updateGroupInfo } = useGroupStore();
+  const {
+    addMembersToGroup,
+    removeMemberFromGroup,
+    leaveGroup,
+    updateGroupInfo,
+  } = useGroupStore();
 
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [selectedNewMembers, setSelectedNewMembers] = useState([]);
@@ -26,14 +37,22 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
   if (!isOpen || !group) return null;
 
   const isAdmin = group.admin._id === authUser._id;
-  const availableUsers = users.filter((user) => !group.members.some((member) => member._id === user._id));
 
+  // Lấy danh sách users chưa có trong group
+  const availableUsers = users.filter(
+    (user) => !group.members.some((member) => member._id === user._id)
+  );
+
+  // Toggle select new member
   const toggleNewMember = (userId) => {
     setSelectedNewMembers((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
     );
   };
 
+  // Thêm members
   const handleAddMembers = async () => {
     if (selectedNewMembers.length === 0) {
       toast.error("Please select at least one member");
@@ -53,33 +72,8 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
     }
   };
 
-  const confirmToast = ({ title, description, confirmLabel, confirmClassName, onConfirm }) => {
-    toast.custom((t) => (
-      <div className="w-[min(92vw,360px)] rounded-[24px] border border-[color:var(--border-soft)] bg-white p-4 shadow-[var(--shadow-lg)]">
-        <p className="text-[15px] font-semibold text-[color:var(--text-strong)]">{title}</p>
-        <p className="mt-2 text-[13px] leading-6 text-[color:var(--text-muted)]">{description}</p>
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => toast.dismiss(t.id)}
-            className="secondary-button min-h-10 px-4 text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              toast.dismiss(t.id);
-              await onConfirm();
-            }}
-            className={`${confirmClassName} min-h-10 px-4 text-sm font-medium`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    ));
-  };
+  // Xóa member
+  // import toast from "react-hot-toast";
 
   const handleRemoveMember = async (memberId, memberName) => {
     if (memberId === group.admin._id) {
@@ -87,46 +81,85 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
       return;
     }
 
-    confirmToast({
-      title: "Remove member",
-      description: `Remove ${memberName} from ${group.name}?`,
-      confirmLabel: "Remove",
-      confirmClassName: "danger-button",
-      onConfirm: async () => {
-        try {
-          await removeMemberFromGroup(group._id, memberId);
-          toast.success(`${memberName} has been removed`);
-        } catch (error) {
-          console.error("Failed to remove member:", error);
-          toast.error("Failed to remove member");
-        }
-      },
-    });
+    toast.custom((t) => (
+      <div className="bg-white border-4 border-black rounded-xl px-4 py-3 shadow-[3px_3px_0_#000]">
+        <p className="font-bold mb-2 text-sm text-black">
+          Remove <span className="text-red-600">{memberName}</span> from this
+          group?
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await removeMemberFromGroup(group._id, memberId);
+                toast.success(`${memberName} has been removed`);
+              } catch (error) {
+                console.error("Failed to remove member:", error);
+                toast.error("Failed to remove member");
+              }
+            }}
+            className="bg-[#FF6B6B] text-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Remove
+          </button>
+
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ));
   };
 
+  // Rời khỏi group
+  // Rời khỏi group
   const handleLeaveGroup = async () => {
     if (isAdmin) {
-      toast.error("Admin cannot leave the group. Transfer ownership first.");
+      toast.error(
+        "Admin cannot leave the group. Please transfer admin role first or delete the group."
+      );
       return;
     }
 
-    confirmToast({
-      title: "Leave group",
-      description: `You will leave ${group.name} and stop receiving new messages from this room.`,
-      confirmLabel: "Leave group",
-      confirmClassName: "danger-button",
-      onConfirm: async () => {
-        try {
-          await leaveGroup(group._id);
-          onClose();
-        } catch (error) {
-          console.error("Failed to leave group:", error);
-          toast.error("Failed to leave group");
-        }
-      },
-    });
+    toast.custom((t) => (
+      <div className="bg-white border-4 border-black rounded-xl px-4 py-3 shadow-[3px_3px_0_#000]">
+        <p className="font-bold mb-2 text-sm text-black">
+          Leave group <span className="text-blue-600">"{group.name}"</span>?
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await leaveGroup(group._id);
+                onClose();
+                // toast.success("You have left the group");
+              } catch (error) {
+                console.error("Failed to leave group:", error);
+                toast.error("Failed to leave group");
+              }
+            }}
+            className="bg-[#FF6B6B] text-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Leave
+          </button>
+
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-white border-2 border-black rounded-lg px-3 py-1 font-bold hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0_#000]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ));
   };
 
+  // Bật chế độ edit
   const handleStartEdit = () => {
     setEditName(group.name);
     setEditDescription(group.description || "");
@@ -134,6 +167,7 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
     setIsEditMode(true);
   };
 
+  // Hủy edit
   const handleCancelEdit = () => {
     setEditName("");
     setEditDescription("");
@@ -141,17 +175,20 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
     setIsEditMode(false);
   };
 
+  // Xử lý chọn ảnh mới
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
+
     const reader = new FileReader();
     reader.onloadend = () => setEditImage(reader.result);
     reader.readAsDataURL(file);
   };
 
+  // Cập nhật thông tin group
   const handleUpdateGroup = async () => {
     if (!editName.trim()) {
       toast.error("Group name is required");
@@ -175,261 +212,327 @@ const GroupSettingsModal = ({ isOpen, onClose, group }) => {
   };
 
   return (
-    <ModalShell
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Group settings"
-      subtitle="Manage room details, members, and membership actions."
-      icon={Users}
-      className="max-w-4xl"
-      footer={
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-          <div>
-            {!isAdmin && (
-              <button
-                type="button"
-                onClick={handleLeaveGroup}
-                className="danger-button min-h-10 px-4 text-[12px] font-medium"
-              >
-                <LogOut className="h-4 w-4" />
-                Leave group
-              </button>
-            )}
+    <div className="fixed inset-0 bg-black/50 z-[10000] flex items-start justify-center px-4 pt-20 pb-8">
+      <div className="bg-[#FDFCF5] border-4 border-black rounded-2xl shadow-[8px_8px_0_#000] max-w-lg w-full max-h-[85vh] overflow-y-scroll scrollbar-hide relative">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b-4 border-black bg-[#FFD43B]">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-[#74C0FC] border-3 border-black rounded-full flex items-center justify-center">
+              <Users size={20} className="text-black" />
+            </div>
+            <h2 className="text-xl font-black text-black">Group Settings</h2>
           </div>
-          <button type="button" onClick={onClose} className="secondary-button min-h-10 px-4 text-[12px] font-medium">
-            Close
+          <button
+            onClick={onClose}
+            className="w-8 h-8 bg-red-500 border-3 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
+          >
+            <X size={16} className="text-white" />
           </button>
         </div>
-      }
-    >
-      <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <Panel elevated className="p-5">
-          <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
-            <div className="relative">
-              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[color:var(--surface-2)]">
-                {isEditMode && editImage ? (
-                  <img src={editImage} alt="Updated group" className="h-full w-full object-cover" />
-                ) : group.groupPic ? (
-                  <img src={group.groupPic} alt={group.name} className="h-full w-full object-cover" />
-                ) : (
-                  <Users className="h-8 w-8 text-[color:var(--text-muted)]" />
+
+        {/* Body */}
+        <div className="p-4 space-y-4">
+          {/* Group Info Section */}
+          <div className="bg-white border-2 border-black rounded-lg p-4 shadow-[2px_2px_0_#000]">
+            {/* Edit Mode Header */}
+            {isEditMode && (
+              <div className="mb-3 p-2 bg-blue-100 border-2 border-blue-500 rounded-lg">
+                <p className="text-xs font-bold text-blue-700">
+                  ✏️ Edit Mode - Update group information
+                </p>
+              </div>
+            )}
+
+            {/* Group Picture */}
+            <div className="flex flex-col items-center gap-3 mb-4">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full border-3 border-black bg-[#FFD43B] overflow-hidden shadow-[3px_3px_0_#000]">
+                  {isEditMode && editImage ? (
+                    <img
+                      src={editImage}
+                      alt="New group pic"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : group.groupPic ? (
+                    <img
+                      src={group.groupPic}
+                      alt={group.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Users size={36} className="text-black" />
+                    </div>
+                  )}
+                </div>
+                {/* Change picture button (chỉ khi edit mode) */}
+                {isEditMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-[#74C0FC] border-2 border-black rounded-full flex items-center justify-center shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#000] transition-all"
+                    >
+                      <Camera size={16} className="text-black" />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </>
                 )}
               </div>
-              {isEditMode && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="secondary-button absolute bottom-0 right-0 h-9 w-9 rounded-full p-0"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                </>
+            </div>
+
+            {/* Group Name */}
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-gray-600 mb-1">
+                GROUP NAME
+              </label>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] focus:outline-none font-bold text-base"
+                  maxLength={50}
+                />
+              ) : (
+                <p className="text-lg font-black text-black">{group.name}</p>
               )}
             </div>
 
-            <div className="min-w-0 flex-1">
+            {/* Group Description */}
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-gray-600 mb-1">
+                DESCRIPTION
+              </label>
               {isEditMode ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="input-base"
-                    maxLength={50}
-                  />
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className="input-base min-h-[110px] resize-none"
-                    maxLength={200}
-                    placeholder="Describe the group"
-                  />
-                </div>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] focus:outline-none font-medium text-sm resize-none"
+                  rows={2}
+                  maxLength={200}
+                  placeholder="Add a description..."
+                />
               ) : (
-                <>
-                  <h3 className="text-[18px] font-semibold leading-7 text-[color:var(--text-strong)]">{group.name}</h3>
-                  <p className="mt-2 text-[13px] leading-6 text-[color:var(--text-muted)]">
-                    {group.description || "No description added yet."}
-                  </p>
-                </>
+                <p className="text-sm font-medium text-gray-700">
+                  {group.description || "No description"}
+                </p>
               )}
+            </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-[color:var(--surface-2)] px-3 py-1 text-[12px] font-medium text-[color:var(--text-muted)]">
-                  {group.members.length} members
+            {/* Created by */}
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-gray-600 mb-1">
+                CREATED BY
+              </label>
+              <div className="flex items-center gap-2">
+                <img
+                  src={group.admin.profilePic || "/statics/10.jpg"}
+                  alt={group.admin.fullName}
+                  className="w-8 h-8 rounded-full border-2 border-black object-cover"
+                />
+                <span className="font-bold text-black text-sm">
+                  {group.admin.fullName}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-50)] px-3 py-1 text-[12px] font-medium text-[color:var(--brand-500)]">
-                  <Crown className="h-3.5 w-3.5" />
-                  Admin: {group.admin.fullName}
-                </span>
+                <Crown size={16} className="text-yellow-500" />
               </div>
             </div>
+
+            {/* Member Count */}
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">
+                MEMBERS ({group.members.length})
+              </label>
+            </div>
+
+            {/* Edit/Update Buttons for Admin */}
+            {isAdmin && (
+              <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                {isEditMode ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCancelEdit}
+                      className="flex-1 px-3 py-2 bg-gray-300 border-2 border-black rounded-lg font-bold text-sm shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUpdateGroup}
+                      disabled={isUpdating}
+                      className="flex-1 px-3 py-2 bg-[#74C0FC] border-2 border-black rounded-lg font-bold text-sm shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isUpdating ? "Updating..." : "Save Changes"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleStartEdit}
+                    className="w-full px-3 py-2 bg-[#FFD43B] border-2 border-black rounded-lg font-bold text-sm shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center gap-2"
+                  >
+                    <Edit size={16} />
+                    Edit Group Info
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {isAdmin && (
-            <div className="mt-5 border-t border-[color:var(--border-soft)] pt-5">
-              {isEditMode ? (
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button type="button" onClick={handleCancelEdit} className="secondary-button min-h-10 px-4 text-[12px] font-medium">
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUpdateGroup}
-                    disabled={isUpdating}
-                    className="primary-button min-h-10 px-4 text-[12px] font-medium disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    {isUpdating ? "Saving..." : "Save changes"}
-                  </button>
-                </div>
-              ) : (
-                <button type="button" onClick={handleStartEdit} className="secondary-button min-h-10 px-4 text-[12px] font-medium">
-                  <Edit3 className="h-4 w-4" />
-                  Edit group details
-                </button>
-              )}
-            </div>
-          )}
-        </Panel>
-
-        <div className="space-y-5">
-          <Panel elevated className="p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h4 className="text-[15px] font-semibold text-[color:var(--text-strong)]">Members</h4>
-                <p className="mt-1 text-[12px] text-[color:var(--text-muted)]">Review who is part of this room.</p>
-              </div>
-              {isAdmin && (
+          {/* Members List */}
+          <div className="bg-white border-2 border-black rounded-lg shadow-[2px_2px_0_#000]">
+            <div className="p-3 border-b-2 border-black bg-[#FFF2AC] flex items-center justify-between">
+              <h3 className="font-bold text-sm text-black">
+                All Members ({group.members.length})
+              </h3>
+              {isAdmin && !showAddMembers && (
                 <button
-                  type="button"
-                  onClick={() => setShowAddMembers((prev) => !prev)}
-                  className="secondary-button min-h-9 px-3 text-[12px] font-medium"
+                  onClick={() => setShowAddMembers(true)}
+                  className="px-3 py-1 bg-[#74C0FC] border-2 border-black rounded-lg font-bold text-xs shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1"
                 >
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus size={14} />
                   Add
                 </button>
               )}
             </div>
 
+            {/* Add Members Section */}
             {showAddMembers && isAdmin && (
-              <div className="mt-4 rounded-[var(--radius-lg)] bg-[color:var(--surface-2)] p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-[12px] font-medium text-[color:var(--text-strong)]">Add new members</p>
-                  <span className="text-[12px] text-[color:var(--text-muted)]">{selectedNewMembers.length} selected</span>
+              <div className="p-3 border-b-2 border-black bg-blue-50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-gray-700">
+                    Select members to add ({selectedNewMembers.length} selected)
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowAddMembers(false);
+                      setSelectedNewMembers([]);
+                    }}
+                    className="text-xs font-bold text-red-600 hover:underline"
+                  >
+                    Cancel
+                  </button>
                 </div>
 
                 {availableUsers.length === 0 ? (
-                  <EmptyState
-                    compact
-                    icon={Users}
-                    title="No more members available"
-                    description="Everyone in your contacts is already in this group."
-                  />
+                  <p className="text-xs text-gray-500 text-center py-2">
+                    No more users to add
+                  </p>
                 ) : (
                   <>
-                    <div className="scrollbar-subtle max-h-48 space-y-2 overflow-y-auto">
-                      {availableUsers.map((user) => {
-                        const isSelected = selectedNewMembers.includes(user._id);
-                        return (
-                          <button
-                            key={user._id}
-                            type="button"
-                            onClick={() => toggleNewMember(user._id)}
-                            className={`flex w-full items-center gap-3 rounded-[var(--radius-md)] border px-3 py-3 text-left transition ${
-                              isSelected
-                                ? "border-[color:var(--brand-100)] bg-white"
-                                : "border-transparent bg-white/70 hover:border-[color:var(--border-soft)]"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="h-4 w-4 rounded accent-[color:var(--brand-500)]"
-                            />
-                            <img
-                              src={user.profilePic || "/statics/10.jpg"}
-                              alt={user.fullName}
-                              className="h-9 w-9 rounded-full object-cover"
-                            />
-                            <span className="min-w-0 flex-1 truncate text-sm font-medium text-[color:var(--text-strong)]">
-                              {user.fullName}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="max-h-32 overflow-y-auto space-y-1 mb-2">
+                      {availableUsers.map((user) => (
+                        <div
+                          key={user._id}
+                          onClick={() => toggleNewMember(user._id)}
+                          className={`flex items-center gap-2 p-2 rounded-lg border-2 border-black cursor-pointer transition-all ${
+                            selectedNewMembers.includes(user._id)
+                              ? "bg-[#74C0FC] shadow-[1px_1px_0_#000]"
+                              : "bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedNewMembers.includes(user._id)}
+                            onChange={() => {}}
+                            className="w-4 h-4 border-2 border-black rounded"
+                          />
+                          <img
+                            src={user.profilePic || "/statics/10.jpg"}
+                            alt={user.fullName}
+                            className="w-6 h-6 rounded-full border-2 border-black object-cover"
+                          />
+                          <span className="font-semibold text-black text-xs flex-1">
+                            {user.fullName}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="mt-4 flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddMembers(false);
-                          setSelectedNewMembers([]);
-                        }}
-                        className="secondary-button min-h-10 px-4 text-[12px] font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleAddMembers}
-                        disabled={selectedNewMembers.length === 0 || isAdding}
-                        className="primary-button min-h-10 px-4 text-[12px] font-medium disabled:cursor-not-allowed disabled:opacity-45"
-                      >
-                        {isAdding ? "Adding..." : `Add ${selectedNewMembers.length || ""} member${selectedNewMembers.length === 1 ? "" : "s"}`}
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleAddMembers}
+                      disabled={selectedNewMembers.length === 0 || isAdding}
+                      className="w-full px-3 py-2 bg-[#74C0FC] border-2 border-black rounded-lg font-bold text-sm shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAdding
+                        ? "Adding..."
+                        : `Add ${selectedNewMembers.length} Member(s)`}
+                    </button>
                   </>
                 )}
               </div>
             )}
 
-            <div className="scrollbar-subtle mt-4 max-h-[340px] space-y-2 overflow-y-auto">
+            {/* Current Members List */}
+            <div className="max-h-48 overflow-y-auto p-2 space-y-1">
               {group.members.map((member) => (
                 <div
                   key={member._id}
-                  className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[color:var(--border-soft)] bg-[color:var(--surface-2)] px-3 py-3"
+                  className="flex items-center gap-2 p-2 rounded-lg border-2 border-black bg-white hover:bg-gray-50 transition-all"
                 >
                   <img
                     src={member.profilePic || "/statics/10.jpg"}
                     alt={member.fullName}
-                    className="h-10 w-10 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full border-2 border-black object-cover"
                   />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-medium text-[color:var(--text-strong)]">{member.fullName}</p>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {member._id === group.admin._id && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--warning-500)]/12 px-2.5 py-1 text-[11px] font-medium text-[color:var(--warning-500)]">
-                          <Crown className="h-3 w-3" />
-                          Admin
-                        </span>
-                      )}
-                      {member._id === authUser._id && (
-                        <span className="rounded-full bg-[color:var(--brand-50)] px-2.5 py-1 text-[11px] font-medium text-[color:var(--brand-500)]">
-                          You
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <span className="font-semibold text-black flex-1 text-sm">
+                    {member.fullName}
+                  </span>
+                  {member._id === group.admin._id && (
+                    <span className="text-xs font-bold bg-yellow-400 border-2 border-black px-2 py-1 rounded flex items-center gap-1">
+                      <Crown size={12} />
+                      Admin
+                    </span>
+                  )}
+                  {member._id === authUser._id && (
+                    <span className="text-xs font-bold bg-blue-400 border-2 border-black px-2 py-1 rounded">
+                      You
+                    </span>
+                  )}
+                  {/* Remove button (chỉ admin mới thấy và không thể remove chính mình nếu là admin) */}
                   {isAdmin && member._id !== group.admin._id && (
                     <button
-                      type="button"
-                      onClick={() => handleRemoveMember(member._id, member.fullName)}
-                      className="icon-button ghost-button text-[color:var(--danger-500)]"
-                      aria-label={`Remove ${member.fullName}`}
+                      onClick={() =>
+                        handleRemoveMember(member._id, member.fullName)
+                      }
+                      className="w-7 h-7 bg-red-500 border-2 border-black rounded flex items-center justify-center shadow-[1px_1px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
+                      title="Remove member"
                     >
-                      <UserMinus className="h-4 w-4" />
+                      <UserMinus size={14} className="text-white" />
                     </button>
                   )}
                 </div>
               ))}
             </div>
-          </Panel>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            {/* Leave Group Button (không hiển thị cho admin) */}
+            {!isAdmin && (
+              <button
+                onClick={handleLeaveGroup}
+                className="w-full px-4 py-2 bg-red-500 border-2 border-black rounded-lg font-bold text-white text-sm shadow-[3px_3px_0_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000] transition-all flex items-center justify-center gap-2"
+              >
+                <LogOut size={16} />
+                Leave Group
+              </button>
+            )}
+
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 bg-gray-300 border-2 border-black rounded-lg font-bold text-black text-sm shadow-[3px_3px_0_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000] transition-all"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
-    </ModalShell>
+    </div>
   );
 };
 

@@ -16,19 +16,21 @@ const AuthImagePattern = ({ title, subtitle }) => {
   };
 
   return (
-    <div className="relative hidden overflow-hidden rounded-[24px] border border-[color:var(--border-soft)] bg-[color:var(--surface-2)] p-7 lg:flex lg:min-h-[580px] lg:items-center lg:justify-center">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.06),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(148,163,184,0.10),transparent_28%)]" />
-      <div className="soft-grid absolute inset-0 opacity-20" />
+    <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-8 relative overflow-hidden">
+      {/* Decorative circles */}
+      <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
 
-      <div className="relative z-10 max-w-md text-center">
-        <div className="mb-7 grid grid-cols-3 gap-2.5">
+      <div className="max-w-md text-center relative z-10 scale-[0.95]">
+        {/* Grid Pattern with Images */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num, i) => (
             <div
               key={i}
-              className={`relative aspect-square overflow-hidden rounded-[14px] border border-[color:var(--border-soft)] bg-white transition-all duration-500 ${
+              className={`aspect-square rounded-2xl overflow-hidden relative transition-all duration-500 ${
                 activeIndex === i
-                  ? "scale-[1.02] border-[color:var(--border-strong)]"
-                  : "opacity-90"
+                  ? "ring-4 ring-white ring-offset-4 shadow-xl shadow-white/50 scale-105"
+                  : "ring-2 ring-white/20"
               }`}
             >
               {!imageErrors[i] ? (
@@ -36,33 +38,27 @@ const AuthImagePattern = ({ title, subtitle }) => {
                   <img
                     src={`/statics/${num}.jpg`}
                     alt={`User ${num}`}
-                    className={`h-full w-full object-cover transition-all duration-500 ${
-                      activeIndex === i ? "brightness-110" : "brightness-95"
+                    className={`w-full h-full object-cover transition-all duration-500 ${
+                      activeIndex === i ? "brightness-125" : "brightness-100"
                     }`}
                     onError={() => handleImageError(i)}
                   />
                   {activeIndex === i && (
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.24))]" />
+                    <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                   )}
                 </>
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-[color:var(--surface-2)]">
-                  <span className="text-xl font-semibold text-[color:var(--text-muted)]">{num}</span>
+                <div className="w-full h-full bg-gradient-to-br from-blue-300 to-blue-400 flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">{num}</span>
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        <div className="rounded-[20px] border border-[color:var(--border-soft)] bg-white/88 px-5 py-6">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--text-faint)]">
-            Swiss product UI
-          </p>
-          <h2 className="text-[22px] font-semibold leading-8 text-[color:var(--text-strong)]">
-            {title}
-          </h2>
-          <p className="mt-3 text-[13px] leading-6 text-[color:var(--text-muted)]">{subtitle}</p>
-        </div>
+        {/* Text Content */}
+        <h2 className="text-2xl font-bold text-white mb-3">{title}</h2>
+        <p className="text-blue-100 text-base leading-relaxed">{subtitle}</p>
       </div>
     </div>
   );

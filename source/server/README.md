@@ -33,6 +33,9 @@ Server chịu trách nhiệm:
 | **CORS** | cors | 2.8.5 | Cross-Origin handling |
 | **Cookie Parser** | cookie-parser | 1.4.7 | Parse cookies |
 | **Environment** | dotenv | 17.2.3 | Environment variables |
+| **Security Headers** | Helmet | 8.2.0 | HTTP security headers |
+| **Rate Limiting** | express-rate-limit | 8.5.2 | Chống spam/brute-force |
+| **Validation** | Zod | 4.4.3 | Validate request body/params |
 | **Dev Tool** | nodemon | 3.1.10 | Auto-restart (dev) |
 
 ---
@@ -66,6 +69,8 @@ Tạo file `.env` trong folder `source/server/`:
 # Server Configuration
 PORT=5001
 NODE_ENV=development
+CLIENT_URL=http://localhost:5173
+JSON_BODY_LIMIT=50mb
 
 # MongoDB Configuration
 MONGODB_URI=mongodb://localhost:27017/chat-app
@@ -74,11 +79,18 @@ MONGODB_URI=mongodb://localhost:27017/chat-app
 
 # JWT Secret (đổi thành chuỗi random phức tạp)
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_EXPIRES_IN=7d
+JWT_COOKIE_NAME=jwt
 
 # Cloudinary Configuration (lấy từ https://cloudinary.com/console)
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+# Rate Limit Configuration
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=300
+AUTH_RATE_LIMIT_MAX=20
 ```
 
 > **⚠️ Quan trọng:** Thay thế các giá trị `your_*` bằng thông tin thực tế của bạn!
@@ -352,6 +364,20 @@ server/
 
 ## 🔐 AUTHENTICATION & SECURITY
 
+### **API Hardening**
+
+Backend đã bổ sung các lớp bảo vệ và kiểm tra dữ liệu đầu vào:
+
+- **Helmet:** thêm HTTP security headers cho Express app.
+- **CORS theo môi trường:** danh sách origin hợp lệ được đọc từ biến `CLIENT_URL`.
+- **Rate limit toàn API:** giới hạn số request trong một khoảng thời gian để giảm spam.
+- **Rate limit auth:** áp dụng riêng cho `/signup` và `/login` để hạn chế brute-force.
+- **Zod validation:** validate body/params cho auth, message và group routes trước khi vào controller.
+- **Error middleware:** chuẩn hóa lỗi `404` và lỗi server.
+- **Safe user response:** response user không trả các field nhạy cảm như `password` và `__v`.
+
+Các API cũ vẫn giữ nguyên endpoint để frontend hiện tại không cần đổi route.
+
 ### **JWT Authentication**
 
 #### **Generate Token:**
@@ -523,7 +549,10 @@ socket.emit("typing", { receiverId: "other_user_id" });
    - ✅ JWT token lưu trong httpOnly cookie (chống XSS)
    - ✅ Password hash với bcrypt (10 rounds)
    - ✅ CORS configured cho specific origins
-   - ✅ Input validation trước khi lưu DB
+   - ✅ Security headers với Helmet
+   - ✅ Rate limit cho toàn API và auth endpoints
+   - ✅ Input validation với Zod trước khi lưu DB
+   - ✅ Không trả password hash trong user response
 
 3. **MongoDB:**
    - Local: `mongodb://localhost:27017/chat-app`
