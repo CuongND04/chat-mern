@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { MessageSquareText, Plus, Search, Users, UsersRound } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
+import { Users, UsersRound, Plus, MessageSquare } from "lucide-react";
 import CreateGroupModal from "./CreateGroupModal";
-import Panel from "./ui/Panel";
-import EmptyState from "./ui/EmptyState";
-import ConversationItem from "./chat/ConversationItem";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } =
+    useChatStore();
   const {
     groups,
     getGroups,
@@ -24,7 +22,6 @@ const Sidebar = () => {
 
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
-  const [query, setQuery] = useState("");
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   useEffect(() => {
@@ -32,201 +29,224 @@ const Sidebar = () => {
     getGroups();
     subscribeToGroupMessages();
     return () => unsubscribeFromGroupMessages();
-  }, [getUsers, getGroups, subscribeToGroupMessages, unsubscribeFromGroupMessages]);
+  }, [
+    getUsers,
+    getGroups,
+    subscribeToGroupMessages,
+    unsubscribeFromGroupMessages,
+  ]);
 
-  const filteredUsers = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const base = showOnlineOnly ? users.filter((u) => onlineUsers.includes(u._id)) : users;
-    if (!normalizedQuery) return base;
-    return base.filter((user) => user.fullName.toLowerCase().includes(normalizedQuery));
-  }, [users, query, showOnlineOnly, onlineUsers]);
-
-  const filteredGroups = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return groups;
-    return groups.filter((group) => group.name.toLowerCase().includes(normalizedQuery));
-  }, [groups, query]);
+  const filteredUsers = showOnlineOnly
+    ? users.filter((u) => onlineUsers.includes(u._id))
+    : users;
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
+  const handleSelectUser = (user) => setSelectedUser(user);
+  const handleSelectGroup = (group) => setSelectedGroup(group);
+
   return (
     <>
-      <aside className="flex h-full flex-col bg-[color:var(--surface-2)] px-3 py-3">
-        <div className="space-y-3 border-b border-[color:var(--border-soft)] px-1 pb-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-faint)]">
-                Workspace
-              </p>
-              <h2 className="mt-1 text-[16px] font-semibold leading-6 text-[color:var(--text-strong)]">
-                Messages
-              </h2>
-            </div>
-            {activeTab === "groups" && (
-              <button
-                type="button"
-                onClick={() => setIsCreateGroupModalOpen(true)}
-                className="icon-button secondary-button"
-                aria-label="Create group"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+      <aside
+        className="h-full w-20 lg:w-72 flex flex-col bg-[#FFE55E]
+        border-r-4 border-black p-3 transition-all duration-300"
+      >
+        {/* === Header: Logo + Tabs === */}
+        <div className="flex flex-col items-center lg:items-stretch gap-4 mb-4">
+          {/* Logo */}
 
-          <div className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-[color:var(--surface-3)] p-1">
+          {/* Tabs (Chats & Groups) */}
+          <div className="flex flex-col lg:flex-row gap-3 w-full">
             <button
-              type="button"
               onClick={() => {
                 setActiveTab("users");
                 setSelectedGroup(null);
               }}
-              className={`rounded-[10px] px-3 py-1.5 text-[12px] font-medium transition ${
-                activeTab === "users"
-                  ? "bg-[color:var(--surface-1)] text-[color:var(--text-strong)]"
-                  : "text-[color:var(--text-muted)]"
-              }`}
+              title="Chats"
+              className={`flex items-center justify-center gap-2 px-2 py-2 border-3 border-black rounded-lg font-bold transition-all shadow-[2px_2px_0_#000]
+                hover:translate-y-[1px] hover:shadow-none ${
+                  activeTab === "users" ? "bg-[#74C0FC]" : "bg-white"
+                }`}
             >
-              Chats
+              <Users className="size-5" />
+              <span className="hidden lg:inline">Chats</span>
             </button>
+
             <button
-              type="button"
               onClick={() => {
                 setActiveTab("groups");
                 setSelectedUser(null);
               }}
-              className={`rounded-[10px] px-3 py-1.5 text-[12px] font-medium transition ${
-                activeTab === "groups"
-                  ? "bg-[color:var(--surface-1)] text-[color:var(--text-strong)]"
-                  : "text-[color:var(--text-muted)]"
-              }`}
+              title="Groups"
+              className={`flex items-center justify-center gap-2 px-2 py-2 border-3 border-black rounded-lg font-bold transition-all shadow-[2px_2px_0_#000]
+                hover:translate-y-[1px] hover:shadow-none ${
+                  activeTab === "groups" ? "bg-[#74C0FC]" : "bg-white"
+                }`}
             >
-              Groups
+              <UsersRound className="size-5" />
+              <span className="hidden lg:inline">Groups</span>
             </button>
           </div>
-
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--text-faint)]" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={activeTab === "users" ? "Search people" : "Search groups"}
-              className="input-base pl-9 text-[13px]"
-            />
-          </label>
-
-          {activeTab === "users" ? (
-            <div className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[color:var(--border-soft)] bg-[color:var(--surface-1)] px-3 py-2.5">
-              <div>
-                <p className="text-[12px] font-medium text-[color:var(--text-strong)]">Online</p>
-                <p className="text-[11px] text-[color:var(--text-muted)]">
-                  {Math.max(onlineUsers.length - 1, 0)} available now
-                </p>
-              </div>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] font-medium text-[color:var(--text-muted)]">
-                <input
-                  type="checkbox"
-                  checked={showOnlineOnly}
-                  onChange={(e) => setShowOnlineOnly(e.target.checked)}
-                  className="h-4 w-4 rounded accent-[color:var(--brand-500)]"
-                />
-                Online only
-              </label>
-            </div>
-          ) : (
-            <div className="rounded-[var(--radius-md)] border border-[color:var(--border-soft)] bg-[color:var(--surface-1)] px-3 py-2.5">
-              <p className="text-[12px] font-medium text-[color:var(--text-strong)]">Group spaces</p>
-              <p className="text-[11px] text-[color:var(--text-muted)]">
-                Shared rooms for teams, study groups, and projects.
-              </p>
-            </div>
-          )}
         </div>
 
-        <div className="scrollbar-subtle flex-1 overflow-y-auto py-3 pr-1">
-          <div className="space-y-1">
-            {activeTab === "users" &&
-              filteredUsers.map((user) => (
-                <ConversationItem
+        {/* === Users Tab === */}
+        {activeTab === "users" && (
+          <>
+            <div className="border-b-4 border-black pb-3 mb-3 flex flex-col gap-2 bg-white rounded-lg p-3 shadow-[3px_3px_0_#000]">
+              <div className="flex items-center gap-2">
+                <Users className="size-6" />
+                <span className="font-extrabold hidden lg:block uppercase">
+                  Contacts
+                </span>
+              </div>
+
+              <div className="hidden lg:flex items-center gap-2">
+                <label className="cursor-pointer flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showOnlineOnly}
+                    onChange={(e) => setShowOnlineOnly(e.target.checked)}
+                    className="accent-black size-4"
+                  />
+                  <span>Online only</span>
+                </label>
+                <span className="text-xs font-semibold">
+                  ({Math.max(onlineUsers.length - 1, 0)} online)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
+              {filteredUsers.map((user) => (
+                <button
                   key={user._id}
-                  title={user.fullName}
-                  subtitle={onlineUsers.includes(user._id) ? "Online now" : "Offline"}
-                  unreadCount={user.unreadCount || 0}
-                  active={selectedUser?._id === user._id}
-                  avatar={user.profilePic || "/statics/10.jpg"}
-                  isOnline={onlineUsers.includes(user._id)}
-                  onClick={() => setSelectedUser(user)}
-                />
+                  onClick={() => handleSelectUser(user)}
+                  className={`flex items-center justify-center lg:justify-start gap-3 w-full text-left 
+                    border-2 border-black rounded-lg px-2 py-2 bg-white shadow-[2px_2px_0_#000]
+                    hover:translate-y-[1px] hover:shadow-none transition-all
+                    ${
+                      selectedUser?._id === user._id
+                        ? "bg-blue-200"
+                        : "hover:bg-[#FFF2AC]"
+                    }`}
+                >
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={user.profilePic || "/statics/10.jpg"}
+                      alt={user.name}
+                      className="size-10 object-cover rounded-full border-2 border-black"
+                    />
+                    {onlineUsers.includes(user._id) && (
+                      <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-black rounded-full" />
+                    )}
+                  </div>
+
+                  <div className="hidden lg:block min-w-0 overflow-hidden flex-1">
+                    <div className="font-bold truncate flex justify-between items-center">
+                      {user.fullName}
+                      {(user.unreadCount || 0) > 0 && (
+                        <span className="text-xs font-extrabold text-white bg-red-600 rounded-full size-5 flex items-center justify-center border-2 border-black">
+                          {user.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs">
+                      {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                    </div>
+                  </div>
+                </button>
               ))}
 
-            {activeTab === "groups" &&
-              filteredGroups.map((group) => (
-                <ConversationItem
-                  key={group._id}
-                  title={group.name}
-                  subtitle={`${group.members?.length || 0} members`}
-                  unreadCount={group.unreadCount || 0}
-                  active={selectedGroup?._id === group._id}
-                  avatar={group.groupPic}
-                  isGroup
-                  onClick={() => setSelectedGroup(group)}
-                />
-              ))}
+              {filteredUsers.length === 0 && (
+                <div className="text-center font-semibold text-gray-600 py-4">
+                  No online users
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
-            {activeTab === "users" && filteredUsers.length === 0 && (
-              <Panel className="bg-white/80">
-                <EmptyState
-                  icon={Users}
-                  compact
-                  title={showOnlineOnly ? "No one is online" : "No contacts found"}
-                  description={
-                    showOnlineOnly
-                      ? "Disable the filter or wait for your contacts to come back."
-                      : "Try a different name or create another account for testing."
-                  }
-                />
-              </Panel>
-            )}
-
-            {activeTab === "groups" && !isGroupsLoading && filteredGroups.length === 0 && (
-              <Panel className="bg-white/80">
-                <EmptyState
-                  icon={UsersRound}
-                  compact
-                  title="No groups yet"
-                  description="Create a group to collaborate with multiple people."
-                  action={
-                    <button
-                      type="button"
-                      onClick={() => setIsCreateGroupModalOpen(true)}
-                      className="primary-button min-h-9 px-3.5 text-[12px] font-medium"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Create group
-                    </button>
-                  }
-                />
-              </Panel>
-            )}
-          </div>
-        </div>
-
-        <div className="border-t border-[color:var(--border-soft)] pt-3">
-          <Panel className="bg-white/80 p-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[color:var(--surface-3)] text-[color:var(--text-muted)]">
-                <MessageSquareText className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-[12px] font-medium text-[color:var(--text-strong)]">Realtime workspace</p>
-                <p className="mt-1 text-[11px] leading-5 text-[color:var(--text-muted)]">
-                  Presence, unread state and attachments stay visible without adding noise.
-                </p>
+        {/* === Groups Tab === */}
+        {activeTab === "groups" && (
+          <>
+            <div className="border-b-4 border-black pb-3 mb-3 flex flex-col gap-2 bg-white rounded-lg p-3 shadow-[3px_3px_0_#000]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UsersRound className="size-6" />
+                  <span className="font-extrabold hidden lg:block uppercase">
+                    Groups
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsCreateGroupModalOpen(true)}
+                  className="w-8 h-8 bg-[#74C0FC] border-2 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
+                  title="Create Group"
+                >
+                  <Plus size={20} />
+                </button>
               </div>
             </div>
-          </Panel>
-        </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
+              {isGroupsLoading ? (
+                <div className="text-center py-4">Loading groups...</div>
+              ) : groups.length === 0 ? (
+                <div className="text-center font-semibold text-gray-600 py-4">
+                  <p>No groups yet</p>
+                  <button
+                    onClick={() => setIsCreateGroupModalOpen(true)}
+                    className="mt-2 px-4 py-2 bg-[#74C0FC] border-2 border-black rounded-lg font-bold shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all"
+                  >
+                    Create your first group
+                  </button>
+                </div>
+              ) : (
+                groups.map((group) => (
+                  <button
+                    key={group._id}
+                    onClick={() => handleSelectGroup(group)}
+                    className={`flex items-center justify-center lg:justify-start gap-3 w-full text-left 
+                      border-2 border-black rounded-lg px-2 py-2 bg-white shadow-[2px_2px_0_#000]
+                      hover:translate-y-[1px] hover:shadow-none transition-all
+                      ${
+                        selectedGroup?._id === group._id
+                          ? "bg-blue-200"
+                          : "hover:bg-[#FFF2AC]"
+                      }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div className="size-10 rounded-full border-2 border-black bg-[#FFD43B] flex items-center justify-center overflow-hidden">
+                        {group.groupPic ? (
+                          <img
+                            src={group.groupPic}
+                            alt={group.name}
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <UsersRound size={20} />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="hidden lg:block min-w-0 overflow-hidden flex-1">
+                      <div className="font-bold truncate flex justify-between items-center">
+                        {group.name}
+                        {(group.unreadCount || 0) > 0 && (
+                          <span className="text-xs font-extrabold text-white bg-red-600 rounded-full size-5 flex items-center justify-center border-2 border-black">
+                            {group.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {group.members?.length || 0} members
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </aside>
 
       <CreateGroupModal

@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  MessageSquare,
+  User,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import AuthImagePattern from "../components/AuthImagePattern";
 import toast from "react-hot-toast";
-import Panel from "../components/ui/Panel";
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,9 +25,11 @@ const SignUpPage = () => {
   const validateForm = () => {
     if (!formData.fullName.trim()) return toast.error("Full name is required");
     if (!formData.email.trim()) return toast.error("Email is required");
-    if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email format");
+    if (!/\S+@\S+\.\S+/.test(formData.email))
+      return toast.error("Invalid email format");
     if (!formData.password) return toast.error("Password is required");
-    if (formData.password.length < 6) return toast.error("Password must be at least 6 characters");
+    if (formData.password.length < 6)
+      return toast.error("Password must be at least 6 characters");
     return true;
   };
 
@@ -31,96 +40,163 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen px-4 pb-4 pt-20 sm:px-6 lg:px-8">
-      <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-6xl items-stretch gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-        <Panel elevated className="flex items-center rounded-[24px] p-6 sm:p-7">
-          <div className="w-full">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--text-faint)]">
-              Create account
-            </p>
-            <h1 className="mt-3 text-[24px] font-semibold leading-8 text-[color:var(--text-strong)]">
-              Create account
+    <div className="h-screen grid lg:grid-cols-2 bg-[#FDFCF5] text-black pt-8 overflow-hidden">
+      {/* LEFT: Form */}
+      <div className="flex flex-col justify-center items-center px-6 sm:px-10 scale-[0.9]">
+        <div
+          className="
+            w-full max-w-md bg-white border-4 border-black rounded-xl 
+            p-6 shadow-[4px_4px_0_#000] overflow-y-auto max-h-[90vh]
+          "
+        >
+          {/* Logo */}
+          <div className="text-center mb-6">
+            <div
+              className="
+                inline-flex items-center justify-center w-14 h-14 rounded-lg
+                bg-yellow-300 border-4 border-black mb-3
+                shadow-[3px_3px_0_#000]
+              "
+            >
+              <MessageSquare className="w-7 h-7 text-black" />
+            </div>
+            <h1 className="text-2xl font-extrabold uppercase tracking-wide">
+              Create Account
             </h1>
-            <p className="mt-2 text-[13px] leading-6 text-[color:var(--text-muted)]">
-              Set up access to direct messages, group rooms and shared files.
+            <p className="text-sm font-medium mt-1 text-gray-700">
+              Join our chat community 💬
             </p>
+          </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              <div>
-                <label className="mb-2 block text-[12px] font-medium text-[color:var(--text-strong)]">Full name</label>
+          {/* FORM */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
+            <div>
+              <label className="block font-bold mb-1">Full Name</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center">
+                  <User className="w-5 h-5 text-black" />
+                </div>
                 <input
                   type="text"
                   required
                   placeholder="John Doe"
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="input-base text-[13px]"
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
+                  className="
+                    w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-lg 
+                    bg-[#FFF2AC] shadow-[3px_3px_0_#000] focus:outline-none
+                    focus:translate-y-[1px] focus:shadow-none transition-all
+                  "
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="mb-2 block text-[12px] font-medium text-[color:var(--text-strong)]">Email</label>
+            {/* Email */}
+            <div>
+              <label className="block font-bold mb-1">Email</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center">
+                  <Mail className="w-5 h-5 text-black" />
+                </div>
                 <input
                   type="email"
                   required
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="input-base text-[13px]"
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="
+                    w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-lg 
+                    bg-[#FFF2AC] shadow-[3px_3px_0_#000] focus:outline-none
+                    focus:translate-y-[1px] focus:shadow-none transition-all
+                  "
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="mb-2 block text-[12px] font-medium text-[color:var(--text-strong)]">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    placeholder="Minimum 6 characters"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="input-base pr-11 text-[13px]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-2)]"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+            {/* Password */}
+            <div>
+              <label className="block font-bold mb-1">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center">
+                  <Lock className="w-5 h-5 text-black" />
                 </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  className="
+                    w-full pl-10 pr-12 py-2.5 border-2 border-black rounded-lg 
+                    bg-[#B9E6C9] shadow-[3px_3px_0_#000] focus:outline-none
+                    focus:translate-y-[1px] focus:shadow-none transition-all
+                  "
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-black"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={isSigningUp}
-                className="primary-button min-h-10 w-full px-4 text-[12px] font-medium disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                {isSigningUp ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  "Create account"
-                )}
-              </button>
-            </form>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isSigningUp}
+              className="
+                w-full mt-5 bg-blue-400 border-2 border-black 
+                text-black font-bold py-2.5 rounded-lg shadow-[3px_3px_0_#000]
+                hover:translate-y-[2px] hover:shadow-none transition-all
+                flex items-center justify-center gap-2
+              "
+            >
+              {isSigningUp ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Creating...
+                </>
+              ) : (
+                "Create Account"
+              )}
+            </button>
+          </form>
 
-            <p className="mt-6 text-[13px] text-[color:var(--text-muted)]">
+          {/* Footer */}
+          <div className="text-center mt-5">
+            <p className="font-medium text-sm">
               Already have an account?{" "}
-              <Link to="/login" className="font-medium text-[color:var(--brand-500)] hover:text-[color:var(--brand-600)]">
+              <Link
+                to="/login"
+                className="
+                  underline font-bold hover:text-blue-600
+                  decoration-2 decoration-black
+                "
+              >
                 Sign in
               </Link>
             </p>
           </div>
-        </Panel>
-
-        <AuthImagePattern
-          title="Built for team conversation"
-          subtitle="Direct chat, group rooms, shared files and live presence in one quiet workspace."
-        />
+        </div>
       </div>
+
+      {/* RIGHT: Illustration */}
+      <AuthImagePattern
+        title="Join our community!"
+        subtitle="Connect with friends, and stay in touch with your loved ones."
+      />
     </div>
   );
 };
