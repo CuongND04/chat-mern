@@ -4,12 +4,20 @@ import {
   objectIdSchema,
   optionalBase64String,
   optionalString,
+  paginationQuerySchema,
 } from "./common.schema.js";
 
 export const userIdParamSchema = z.object({
   params: z.object({
     id: objectIdSchema,
   }),
+});
+
+export const getMessagesSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  query: paginationQuerySchema.optional(),
 });
 
 export const sendMessageSchema = z.object({

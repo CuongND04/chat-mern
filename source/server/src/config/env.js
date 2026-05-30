@@ -24,6 +24,10 @@ export const env = {
   RATE_LIMIT_WINDOW_MS: toNumber(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
   RATE_LIMIT_MAX: toNumber(process.env.RATE_LIMIT_MAX, 300),
   AUTH_RATE_LIMIT_MAX: toNumber(process.env.AUTH_RATE_LIMIT_MAX, 20),
+  REDIS_URL: process.env.REDIS_URL || "",
+  CACHE_TTL_SECONDS: toNumber(process.env.CACHE_TTL_SECONDS, 60),
+  MESSAGE_PAGE_LIMIT: toNumber(process.env.MESSAGE_PAGE_LIMIT, 50),
+  MESSAGE_PAGE_MAX_LIMIT: toNumber(process.env.MESSAGE_PAGE_MAX_LIMIT, 100),
 };
 
 export const isProduction = env.NODE_ENV === "production";

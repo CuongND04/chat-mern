@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { env } from "../config/env.js";
 
 export const objectIdSchema = z
   .string()
@@ -27,3 +28,12 @@ export const filePayloadSchema = z.preprocess(
     .optional()
 );
 
+export const paginationQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(env.MESSAGE_PAGE_MAX_LIMIT)
+    .optional(),
+  before: z.string().datetime().optional(),
+});

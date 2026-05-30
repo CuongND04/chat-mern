@@ -1,5 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
+import { invalidateGroupListCaches, invalidateUserListCaches } from "../lib/cache.js";
 import { clearTokenCookie, generateToken, sanitizeUser } from "../lib/utils.js";
+import Group from "../models/group.model.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 export const signup = async (req, res) => {
@@ -34,6 +36,7 @@ export const signup = async (req, res) => {
       // _id is how mongodb stores, not id
       generateToken(newUser._id, res);
       await newUser.save();
+      await invalidateUserListCaches();
 
       // 201: which means something has been created
       res.status(201).json(sanitizeUser(newUser));
@@ -116,6 +119,15 @@ export const updateProfile = async (req, res) => {
       { new: true }
     ).select("-password");
 
+    const affectedGroups = await Group.find({ members: userId }).select("members");
+    const affectedMemberIds = affectedGroups.flatMap((group) =>
+      group.members.map((memberId) => memberId.toString())
+    );
+
+    await Promise.all([
+      invalidateUserListCaches(),
+      invalidateGroupListCaches(affectedMemberIds),
+    ]);
     res.status(200).json(sanitizeUser(updatedUser));
   } catch (error) {
     console.error("Error in update profile:", error.message);

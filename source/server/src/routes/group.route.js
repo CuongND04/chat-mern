@@ -15,6 +15,7 @@ import {
 import {
   addMembersSchema,
   createGroupSchema,
+  getGroupMessagesSchema,
   groupIdParamSchema,
   memberParamSchema,
   sendGroupMessageSchema,
@@ -30,7 +31,7 @@ router.post("/create", protectRoute, validate(createGroupSchema), createGroup);
 router.get("/", protectRoute, getUserGroups);
 
 // Lấy messages của group
-router.get("/:groupId/messages", protectRoute, validate(groupIdParamSchema), getGroupMessages);
+router.get("/:groupId/messages", protectRoute, validate(getGroupMessagesSchema), getGroupMessages);
 
 // Gửi message trong group
 router.post("/:groupId/send", protectRoute, validate(sendGroupMessageSchema), sendGroupMessage);
