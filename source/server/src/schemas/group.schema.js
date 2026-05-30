@@ -4,6 +4,7 @@ import {
   objectIdSchema,
   optionalBase64String,
   optionalString,
+  paginationQuerySchema,
 } from "./common.schema.js";
 
 const optionalGroupName = z.preprocess(
@@ -15,6 +16,13 @@ export const groupIdParamSchema = z.object({
   params: z.object({
     groupId: objectIdSchema,
   }),
+});
+
+export const getGroupMessagesSchema = z.object({
+  params: z.object({
+    groupId: objectIdSchema,
+  }),
+  query: paginationQuerySchema.optional(),
 });
 
 export const memberParamSchema = z.object({

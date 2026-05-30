@@ -1,8 +1,26 @@
 import cloudinary from "../lib/cloudinary.js";
+import {
+  cacheKeys,
+  deleteCache,
+  getCache,
+  invalidateGroupListCaches,
+  setCache,
+} from "../lib/cache.js";
+import { env } from "../config/env.js";
 import Group from "../models/group.model.js";
 import Message from "../models/message.model.js";
-import User from "../models/user.model.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+
+const getPaginationOptions = (query = {}) => {
+  const hasPagination = query.limit !== undefined || query.before !== undefined;
+  if (!hasPagination) return { enabled: false };
+
+  return {
+    enabled: true,
+    limit: query.limit || env.MESSAGE_PAGE_LIMIT,
+    before: query.before ? new Date(query.before) : new Date(),
+  };
+};
 
 // Tạo group mới
 export const createGroup = async (req, res) => {
@@ -39,6 +57,8 @@ export const createGroup = async (req, res) => {
       .populate("members", "-password")
       .populate("admin", "-password");
 
+    await invalidateGroupListCaches(members);
+
     // Emit socket cho tất cả members
     members.forEach((memberId) => {
       const socketId = getReceiverSocketId(memberId.toString());
@@ -58,6 +78,12 @@ export const createGroup = async (req, res) => {
 export const getUserGroups = async (req, res) => {
   try {
     const userId = req.user._id;
+    const cacheKey = cacheKeys.userGroups(userId.toString());
+    const cachedGroups = await getCache(cacheKey);
+
+    if (cachedGroups) {
+      return res.status(200).json(cachedGroups);
+    }
 
     const groups = await Group.find({ members: userId })
       .populate("members", "-password")
@@ -87,6 +113,8 @@ export const getUserGroups = async (req, res) => {
       })
     );
 
+    await setCache(cacheKey, groupsWithUnreadCount);
+
     res.status(200).json(groupsWithUnreadCount);
   } catch (error) {
     console.log("Error in getUserGroups: ", error.message);
@@ -110,11 +138,29 @@ export const getGroupMessages = async (req, res) => {
       return res.status(403).json({ message: "You are not a member of this group" });
     }
 
-    const messages = await Message.find({ groupId })
-      .populate("senderId", "fullName profilePic")
-      .sort({ createdAt: 1 });
+    const pagination = getPaginationOptions(req.validated?.query);
+    const messageFilter = { groupId };
 
-    res.status(200).json(messages);
+    if (pagination.enabled) {
+      messageFilter.createdAt = { $lt: pagination.before };
+    }
+
+    const query = Message.find(messageFilter)
+      .populate("senderId", "fullName profilePic")
+      .sort({ createdAt: pagination.enabled ? -1 : 1 });
+
+    if (pagination.enabled) {
+      query.limit(pagination.limit);
+    }
+
+    const messages = await query;
+    const orderedMessages = pagination.enabled ? messages.reverse() : messages;
+
+    if (pagination.enabled && orderedMessages.length === pagination.limit) {
+      res.set("X-Next-Cursor", orderedMessages[0].createdAt.toISOString());
+    }
+
+    res.status(200).json(orderedMessages);
   } catch (error) {
     console.log("Error in getGroupMessages: ", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -186,6 +232,7 @@ export const sendGroupMessage = async (req, res) => {
     // Update lastMessage của group
     group.lastMessage = newMessage._id;
     await group.save();
+    await invalidateGroupListCaches(group.members);
 
     // Emit socket cho tất cả members
     group.members.forEach((memberId) => {
@@ -219,6 +266,7 @@ export const markGroupMessagesAsRead = async (req, res) => {
       },
       { $addToSet: { readBy: userId } }
     );
+    await deleteCache(cacheKeys.userGroups(userId.toString()));
 
     res.status(200).json({ message: "Messages marked as read" });
   } catch (error) {
@@ -256,6 +304,8 @@ export const addMembersToGroup = async (req, res) => {
       .populate("members", "-password")
       .populate("admin", "-password");
 
+    await invalidateGroupListCaches(updatedGroup.members);
+
     // Emit socket cho tất cả members (cũ + mới)
     updatedGroup.members.forEach((member) => {
       const socketId = getReceiverSocketId(member._id.toString());
@@ -292,12 +342,15 @@ export const removeMemberFromGroup = async (req, res) => {
       return res.status(400).json({ message: "Cannot remove admin from group" });
     }
 
+    const affectedMembers = [...group.members.map((m) => m.toString()), memberId];
     group.members = group.members.filter((m) => m.toString() !== memberId);
     await group.save();
 
     const updatedGroup = await Group.findById(groupId)
       .populate("members", "-password")
       .populate("admin", "-password");
+
+    await invalidateGroupListCaches(affectedMembers);
 
     // Emit socket
     const memberSocketId = getReceiverSocketId(memberId);
@@ -345,6 +398,7 @@ export const updateGroupInfo = async (req, res) => {
     }
 
     await group.save();
+    await invalidateGroupListCaches(group.members);
 
     const updatedGroup = await Group.findById(groupId)
       .populate("members", "-password")
@@ -385,6 +439,7 @@ export const leaveGroup = async (req, res) => {
 
     group.members = group.members.filter((m) => m.toString() !== userId.toString());
     await group.save();
+    await invalidateGroupListCaches([userId, ...group.members]);
 
     // Emit socket
     group.members.forEach((member) => {
