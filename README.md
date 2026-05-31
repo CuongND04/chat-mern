@@ -78,9 +78,13 @@ React Client (Frontend)  <-->  Express Server (Backend)  <-->  MongoDB (Database
 | Runtime | Node.js | 20.x | JavaScript runtime |
 | Framework | Express.js | 5.1.0 | Web framework |
 | Database | MongoDB | - | NoSQL database |
+| Cache | Redis | 7.x | Cache dữ liệu backend |
 | Real-time | Socket.IO | 4.8.1 | WebSocket library |
 | Authentication | JWT + bcryptjs | 9.0.2 / 3.0.2 | Token & password hashing |
 | File Storage | Cloudinary | 2.8.0 | Cloud storage |
+| Security | Helmet + express-rate-limit + Zod | 8.2.0 / 8.5.2 / 4.4.3 | Security headers, rate limit, validation |
+| API Docs | Swagger UI / OpenAPI | 5.0.1 | Tài liệu API tương tác |
+| Local Infra | Docker Compose | - | Chạy MongoDB và Redis local |
 | **Client (Frontend)** |
 | Framework | React | 19.1.1 | UI library |
 | Build Tool | Vite | Latest | Fast build tool |
@@ -99,14 +103,16 @@ React Client (Frontend)  <-->  Express Server (Backend)  <-->  MongoDB (Database
 ### **Yêu cầu hệ thống**
 - Node.js 20.x trở lên
 - MongoDB (local hoặc MongoDB Atlas)
+- Redis (local hoặc Docker)
 - Tài khoản Cloudinary (free tier)
+- Docker Desktop (nếu chạy MongoDB/Redis bằng Docker Compose)
 
 ---
 
 ### **1. Clone repository**
 ```powershell
-git clone https://github.com/jnp2018/mid-project-085097830.git
-cd mid-project-085097830
+git clone https://github.com/CuongND04/chat-mern.git
+cd chat-mern
 ```
 
 ---
@@ -122,7 +128,11 @@ npm install
 
 # Tạo file .env với nội dung:
 # PORT=5001
-# MONGODB_URI=mongodb://localhost:27017/chat-app
+# MONGODB_URI=mongodb://127.0.0.1:27018/chat-app
+# REDIS_URL=redis://127.0.0.1:6380
+# CACHE_TTL_SECONDS=60
+# MESSAGE_PAGE_LIMIT=50
+# MESSAGE_PAGE_MAX_LIMIT=100
 # JWT_SECRET=your_secret_key_here
 # CLOUDINARY_CLOUD_NAME=your_cloud_name
 # CLOUDINARY_API_KEY=your_api_key
@@ -132,7 +142,19 @@ npm install
 npm run dev
 ```
 
-✅ Server chạy tại: **http://localhost:5001**
+> **Nếu muốn chạy MongoDB và Redis bằng Docker Compose từ thư mục gốc dự án:**
+```powershell
+docker compose down --remove-orphans
+docker compose up -d
+docker compose ps
+```
+> MongoDB Docker: `127.0.0.1:27018`  
+> Redis Docker: `127.0.0.1:6380`  
+> Mở trên MongoDB Compass: `mongodb://127.0.0.1:27018/chat-app`
+
+✅ Server chạy tại: **http://localhost:5001**  
+📚 Swagger API Docs: **http://localhost:5001/api-docs**  
+📄 OpenAPI JSON: **http://localhost:5001/api-docs.json**
 
 ---
 
@@ -174,6 +196,10 @@ npm run dev
 
 ### **REST API Endpoints**
 
+**Tài liệu API tương tác:**  
+- Swagger UI: `http://localhost:5001/api-docs`  
+- OpenAPI JSON: `http://localhost:5001/api-docs.json`
+
 #### **Authentication (`/api/auth`)**
 | Endpoint | Method | Description | Input | Output |
 |----------|--------|-------------|-------|--------|
@@ -181,29 +207,33 @@ npm run dev
 | `/login` | POST | Đăng nhập | `{email, password}` | `{user object + JWT cookie}` |
 | `/logout` | POST | Đăng xuất | — | `{message: "Logged out"}` |
 | `/check` | GET | Kiểm tra auth status | — | `{user object}` |
-| `/update-profile` | PUT | Cập nhật thông tin user | `{fullName, email, profilePic}` | `{updated user}` |
+| `/update-profile` | PUT | Cập nhật thông tin user | `{fullName, email, profilePic, bio, location}` | `{updated user}` |
 | `/change-password` | PUT | Đổi mật khẩu | `{currentPassword, newPassword}` | `{message: "Password updated"}` |
 
 #### **Messages (`/api/messages`)**
 | Endpoint | Method | Description | Input | Output |
 |----------|--------|-------------|-------|--------|
 | `/users` | GET | Lấy danh sách users (sidebar) | — | `[{user objects with unreadCount}]` |
-| `/:id` | GET | Lấy tin nhắn với user | — | `[{message objects}]` |
+| `/:id` | GET | Lấy tin nhắn với user | `?limit=20&before=<ISO_DATE>` | `[{message objects}]` |
 | `/send/:id` | POST | Gửi tin nhắn đến user | `{text, image, file}` | `{message object}` |
 | `/read/:id` | PUT | Đánh dấu đã đọc tin nhắn | — | `{message: "Marked as read"}` |
+
+> **Ghi chú:** API lịch sử tin nhắn hiện hỗ trợ phân trang bằng `limit` và `before`. Khi còn dữ liệu cũ hơn, server trả về header `X-Next-Cursor`.
 
 #### **Groups (`/api/groups`)**
 | Endpoint | Method | Description | Input | Output |
 |----------|--------|-------------|-------|--------|
 | `/create` | POST | Tạo group mới | `{name, description, memberIds, groupPic}` | `{group object}` |
 | `/` | GET | Lấy danh sách groups | — | `[{group objects with unreadCount}]` |
-| `/:groupId/messages` | GET | Lấy tin nhắn của group | — | `[{message objects}]` |
+| `/:groupId/messages` | GET | Lấy tin nhắn của group | `?limit=20&before=<ISO_DATE>` | `[{message objects}]` |
 | `/:groupId/send` | POST | Gửi tin nhắn trong group | `{text, image, file}` | `{message object}` |
 | `/:groupId/read` | PUT | Đánh dấu đã đọc (group) | — | `{message: "Marked as read"}` |
 | `/:groupId/members` | POST | Thêm thành viên vào group | `{memberIds: [userId1, userId2]}` | `{updated group}` |
 | `/:groupId/members/:memberId` | DELETE | Xóa thành viên khỏi group | — | `{message: "Member removed"}` |
 | `/:groupId` | PUT | Cập nhật thông tin group | `{name, description, groupPic}` | `{updated group}` |
 | `/:groupId/leave` | POST | Rời khỏi group | — | `{message: "Left group"}` |
+
+> **Ghi chú:** API lịch sử group cũng hỗ trợ phân trang bằng `limit` và `before`, tương tự chat 1-1.
 
 ---
 
@@ -226,8 +256,10 @@ npm run dev
 | `message_seen_update` | `{senderId, receiverId}` | Đã đọc tin nhắn |
 | `user-typing` | `{userId, isTyping}` | User đang gõ |
 | `newGroupMessage` | `{groupId, message}` | Tin nhắn mới trong group |
+| `groupUserTyping` | `{groupId, userId, isTyping}` | Thành viên đang gõ trong group |
 | `newGroup` | `{group object}` | Được thêm vào group |
 | `groupUpdated` | `{group object}` | Group info thay đổi |
+| `memberLeftGroup` | `{groupId, userId}` | Thành viên rời khỏi group |
 | `removedFromGroup` | `{groupId}` | Bị xóa khỏi group |
 
 ---
@@ -258,10 +290,10 @@ npm run dev
 ## 🧩 CẤU TRÚC DỰ ÁN
 
 ```
-mid-project-085097830/
+chat-mern/
 ├── README.md                    # Tài liệu chi tiết (file này)
 ├── INSTRUCTION.md               # Hướng dẫn từ giảng viên
-├── GROUP_CHAT_GUIDE.md          # Hướng dẫn tính năng group chat
+├── docker-compose.yml           # Chạy MongoDB và Redis bằng Docker
 ├── statics/                     # Hình ảnh minh họa
 │   ├── diagram.png
 │   └── (screenshots...)
@@ -269,7 +301,6 @@ mid-project-085097830/
     ├── .gitignore
     │
     ├── client/                  # Frontend React
-    │   ├── README.md            # Tài liệu client chi tiết      
     │   ├── package.json
     │   ├── vite.config.js
     │   ├── public/
@@ -297,10 +328,11 @@ mid-project-085097830/
     │           └── utils.js
     │
     └── server/                  # Backend Express
-        ├── README.md            # Tài liệu server chi tiết
+        ├── .env.example         # Biến môi trường mẫu
         ├── package.json
         └── src/
             ├── index.js         # Entry point
+            ├── config/          # Đọc biến môi trường
             ├── controllers/     # Business logic (3)
             │   ├── auth.controller.js
             │   ├── message.controller.js
@@ -313,11 +345,13 @@ mid-project-085097830/
             │   ├── auth.route.js
             │   ├── message.route.js
             │   └── group.route.js
-            ├── middleware/      # Auth middleware
-            │   └── auth.middleware.js
+            ├── middleware/      # Auth, security, error, validation
+            ├── schemas/         # Zod validation schemas
+            ├── docs/            # OpenAPI / Swagger specification
             └── lib/             # Utilities
                 ├── db.js        # MongoDB connection
                 ├── socket.js    # Socket.IO setup
+                ├── cache.js     # Redis cache helper
                 ├── cloudinary.js
                 └── utils.js
 ```
@@ -330,7 +364,7 @@ mid-project-085097830/
 1. Đăng ký tài khoản với email validation
 2. Đăng nhập với JWT authentication
 3. Đăng xuất và xóa session
-4. Cập nhật profile (avatar, name, email)
+4. Cập nhật profile (avatar, name, email, bio, location)
 5. Đổi mật khẩu
 
 ### **II. Chat 1-1 (Direct Messages)**
@@ -338,7 +372,7 @@ mid-project-085097830/
 7. Badge hiển thị số tin nhắn chưa đọc
 8. Gửi tin nhắn text
 9. Gửi hình ảnh (upload lên Cloudinary)
-10. Gửi file attachments (PDF, DOCX,...)
+10. Gửi file attachments (PDF, DOC, DOCX, XLS, XLSX, ZIP, TXT - tối đa 10MB)
 11. Typing indicators ("User đang gõ...")
 12. Read receipts (hiển thị "Read" khi đã đọc)
 13. Download file attachments
@@ -356,7 +390,7 @@ mid-project-085097830/
     - Thêm members mới
     - Xóa members (không thể xóa admin)
     - Sửa tên, mô tả, avatar group
-22. Rời khỏi group (user thường)
+22. Rời khỏi group (user thường; admin không thể rời trực tiếp)
 
 ### **IV. Real-time Features**
 23. Socket.IO connection khi login
@@ -379,7 +413,7 @@ mid-project-085097830/
 - [ ] **Pin Messages:** Ghim tin nhắn quan trọng
 - [ ] **Voice Messages:** Gửi tin nhắn voice
 - [ ] **Backup & Export:** Export lịch sử chat
-- [ ] **Rate Limiting:** Giới hạn số request để chống spam
+- [ ] **Adaptive Rate Limiting:** Tinh chỉnh giới hạn theo IP, người dùng và loại hành vi
 
 ---
 
@@ -387,9 +421,17 @@ mid-project-085097830/
 
 ### **Về cấu trúc:**
 - ✅ Repo tuân thủ đúng cấu trúc theo `INSTRUCTION.md`
-- ✅ Module Client và Server có README riêng
+- ✅ README gốc là tài liệu tổng hợp chính của dự án hiện tại
 - ✅ Tất cả dependencies được liệt kê trong `package.json`
 - ✅ Code được tổ chức theo pattern MVC (Server) và Component-based (Client)
+
+### **Về backend đã bổ sung:**
+- ✅ Validation request với Zod cho auth, messages và groups
+- ✅ Rate limit cho toàn API và riêng auth endpoints
+- ✅ Redis cache cho danh sách users sidebar và danh sách groups
+- ✅ Pagination cho API lịch sử tin nhắn bằng `limit` và `before`
+- ✅ Swagger/OpenAPI docs để test API trực tiếp
+- ✅ Docker Compose cho MongoDB và Redis local
 
 ### **Về testing:**
 - ✅ Manual testing: Tất cả tính năng đã test thành công
@@ -403,9 +445,12 @@ mid-project-085097830/
 - [Express.js Guide](https://expressjs.com/) - Express framework
 - [MongoDB Manual](https://docs.mongodb.com/) - MongoDB database
 - [Socket.IO Documentation](https://socket.io/docs/) - Real-time engine
+- [Redis Documentation](https://redis.io/docs/latest/) - Cache
 - [Zustand](https://docs.pmnd.rs/zustand) - State management
 - [Tailwind CSS](https://tailwindcss.com/) - Utility CSS framework
 - [Cloudinary API](https://cloudinary.com/documentation) - File storage
+- [Swagger UI Express](https://www.npmjs.com/package/swagger-ui-express) - API docs
+- [Docker Compose](https://docs.docker.com/compose/) - Local containers
 
 ### **Security & Authentication:**
 - [JWT.io](https://jwt.io/) - JSON Web Token introduction

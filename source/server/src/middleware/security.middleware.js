@@ -4,6 +4,14 @@ import { env } from "../config/env.js";
 
 export const securityHeaders = helmet({
   crossOriginResourcePolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'"],
+      "style-src": ["'self'", "'unsafe-inline'"],
+      "img-src": ["'self'", "data:", "https:"],
+    },
+  },
 });
 
 export const corsOptions = {

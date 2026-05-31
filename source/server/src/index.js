@@ -1,8 +1,10 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
 
 import { env } from "./config/env.js";
+import { openApiSpec } from "./docs/openapi.js";
 import { connectDB } from "./lib/db.js";
 
 import authRoutes from "./routes/auth.route.js";
@@ -29,6 +31,15 @@ app.use(cookieParser()); // it allow parse the cookies so can grab the values ou
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/groups", groupRoutes);
+app.get("/api-docs.json", (req, res) => res.status(200).json(openApiSpec));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(openApiSpec, {
+    explorer: true,
+    customSiteTitle: "HiChat API Docs",
+  })
+);
 
 app.use(notFound);
 app.use(errorHandler);
